@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spark-history-config
+  namespace: lakehouse
+data:
+  spark-defaults.conf: |
+    spark.eventLog.enabled=true
+    spark.eventLog.dir=s3a://lakehouse/logs/spark-logs
+    spark.history.fs.logDirectory=s3a://lakehouse/logs/spark-logs
+    spark.hadoop.fs.s3a.endpoint=http://minio-1760084160.lakehouse.svc.cluster.local:9000
+    spark.hadoop.fs.s3a.access.key=9kI8gTYxwGS9kLTwsUbV
+    spark.hadoop.fs.s3a.secret.key=kLdeLUYiClXG3Q2EnhxL7Xriqc4aCQ7pTvTYrJWe
+    spark.hadoop.fs.s3a.path.style.access=true
+    spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
+    spark.hadoop.fs.s3a.connection.ssl.enabled=false
+

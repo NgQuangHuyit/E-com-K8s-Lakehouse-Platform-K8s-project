@@ -1,0 +1,48 @@
+image:
+  repository: bitnamilegacy/airflow
+  tag: 2.9.2
+  pullPolicy: IfNotPresent
+
+executor: LocalExecutor  # nhẹ hơn CeleryExecutor
+
+auth:
+  username: admin
+  password: admin
+  fernetKey: "12345678901234567890123456789012"
+  secretKey: "supersecretkey"
+
+externalDatabase:
+  host: mysql-1760465214.lakehouse.svc.cluster.local
+  port: 3306
+  user: admin
+  password: admin123
+  database: airflow_db
+
+postgresql:
+  enabled: false  # vì ta dùng MySQL
+redis:
+  enabled: false  # không cần cho LocalExecutor
+
+web:
+  port: 8080
+  service:
+    type: ClusterIP
+
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  hostname: airflow.lakehouse.local
+  path: /
+
+scheduler:
+  resources:
+
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+webserver:
+  resources:
+    limits:
+      cpu: 200m
+      memory: 300Mi

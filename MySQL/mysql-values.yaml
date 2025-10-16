@@ -1,0 +1,15 @@
+auth:
+  rootPassword: rootpass123
+  username: airflow
+  password: airflowpass123
+  database: airflow_db
+
+primary:
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: do-block-storage  # hoặc storage class bạn đang dùng
+
+service:
+  type: ClusterIP
+  port: 3306

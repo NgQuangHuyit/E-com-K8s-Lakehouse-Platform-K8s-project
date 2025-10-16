@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hive-metastore
+  namespace: lakehouse
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hive-metastore
+  template:
+    metadata:
+      labels:
+        app: hive-metastore
+    spec:
+      
+      containers:
+        - name: metastore
+          image: ngquanghuyit/hive-metastore:latest
+          command: ["/entrypoint.sh"]
+          ports:
+            - containerPort: 9083
+          env:
+            - name: METASTORE_DB_HOSTNAME
+              value: "mysql-1760465214.lakehouse.svc.cluster.local"
+          volumeMounts:
+            - name: hive-config
+              mountPath: /opt/apache-hive-metastore-3.0.0-bin/conf/metastore-site.xml
+              subPath: metastore-site.xml
+      volumes:
+        - name: hive-config
+          configMap:
+            name: hive-metastore-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hive-metastore
+  namespace: lakehouse
+spec:
+  selector:
+    app: hive-metastore
+  ports:
+    - port: 9083
+      targetPort: 9083
+  type: ClusterIP

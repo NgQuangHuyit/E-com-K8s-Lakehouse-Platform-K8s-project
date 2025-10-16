@@ -1,0 +1,95 @@
+useStandardNaming: true
+
+ingress:
+
+  web:
+    enabled: true
+
+    annotations: {}
+
+    # The path for the web Ingress
+    path: "/"
+
+    pathType: "ImplementationSpecific"
+
+    host: "airflow-2.lakehouse.local"
+
+   
+    # The Ingress Class for the web Ingress (used only with Kubernetes v1.19 and above)
+    ingressClassName: "nginx"
+
+    # configs for web Ingress TLS (Deprecated - renamed to `ingress.web.hosts[*].tls`)
+    tls:
+      # Enable TLS termination for the web Ingress
+      enabled: false
+      # the name of a pre-created Secret containing a TLS private key and certificate
+      secretName: ""
+
+    # HTTP paths to add to the web Ingress before the default path
+    precedingPaths: []
+
+    # Http paths to add to the web Ingress after the default path
+    succeedingPaths: []
+
+executor: "LocalExecutor"
+
+data:
+  metadataConnection:
+    user: admin
+    pass: admin123
+    protocol: mysql
+    host: mysql-1760465214.lakehouse.svc.cluster.local
+    port: 3306
+    db: airflow_db_2
+    sslmode: disable
+ 
+
+scheduler:
+  enabled: true
+  
+
+webserver:
+  enabled: true
+
+  defaultUser:
+    enabled: true
+    role: Admin
+    username: admin
+    email: admin@example.com
+    firstName: admin
+    lastName: user
+    password: admin
+
+
+triggerer:
+  enabled: false
+
+statsd:
+  # Add custom annotations to the statsd configmap
+  configMapAnnotations: {}
+
+  enabled: false
+
+redis:
+  enabled: false
+
+postgresql:
+  enabled: false
+
+dags:
+  gitSync:
+    enabled: true
+    repo: "https://github.com/NgQuangHuyit/airflow-dag-repo"
+    branch: "main"
+    # optional: subPath under repo where DAGs live
+    subPath: ""
+    rev: HEAD
+    depth: 1
+    period: 30s
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "64Mi"
+      limits:
+        cpu: "200m"
+        memory: "128Mi"
