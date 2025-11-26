@@ -21,7 +21,11 @@ def get_sftp_files_to_transfer(sftp_conn_id, sftp_remote_path, **kwargs):
     logger.info(f"Listing files in SFTP path: {sftp_remote_path}")
     sftp_hook = SFTPHook(ssh_conn_id=sftp_conn_id)
     file_list = sftp_hook.list_directory(sftp_remote_path)
-    return file_list
+    source_files = list(map(lambda file_name: f"{sftp_remote_path}{file_name}", file_list))
+    logger.info(f"Files found: {source_files}")
+    target_file_s3_key = list(map(lambda file_name: f"{REMOTE_S3_PATH}{file_name}", file_list))
+    logger.info(f"Target S3 keys: {target_file_s3_key}")
+    return source_files
 
 
 default_args = {
@@ -36,7 +40,8 @@ with DAG(
     schedule_interval="0 2 * * *",   
     default_args=default_args,
     catchup=True,     
-    max_active_runs=1 
+    max_active_runs=1,
+
 ) as dag:
 
     list_sftp_files_task = PythonOperator(
@@ -54,7 +59,7 @@ with DAG(
         s3_conn_id=S3_CONN_ID,
         s3_bucket=S3_BUCKET,
     ).expand(
-        sftp_path=list_sftp_files_task.output.map(lambda file_name: f"{SFTP_REMOTE_PATH}{file_name}"),
+        sftp_path=list_sftp_files_task.output,
         s3_key=list_sftp_files_task.output.map(lambda file_name: f"{REMOTE_S3_PATH}{file_name}"),
     )
 
