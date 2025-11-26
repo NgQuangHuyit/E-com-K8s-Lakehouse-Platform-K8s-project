@@ -1,7 +1,8 @@
 from airflow import DAG
 from airflow.utils.dates import days_ago
 from airflow.providers.amazon.aws.transfers.sftp_to_s3 import SFTPToS3Operator
-from airflow.operators.email import EmailOperator
+from airflow.providers.sftp.hooks.sftp import SFTPHook
+from airflow.operators.python import PythonOperator
 from datetime import timedelta
 
 
