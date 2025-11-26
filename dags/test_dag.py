@@ -5,6 +5,7 @@ from airflow.providers.sftp.hooks.sftp import SFTPHook
 from airflow.operators.python import PythonOperator
 from datetime import timedelta
 
+logger = logging.getLogger(__name__)
 
 SFTP_CONN_ID = "web-server-log"
 S3_CONN_ID = "minio_default"    
@@ -16,6 +17,7 @@ def get_sftp_files_to_transfer(sftp_conn_id, sftp_remote_path, **kwargs):
     """
     Lists files in a given SFTP directory and returns their names.
     """
+    logger.info(f"Listing files in SFTP path: {sftp_remote_path}")
     sftp_hook = SFTPHook(ssh_conn_id=sftp_conn_id)
     file_list = sftp_hook.list_directory(sftp_remote_path)
     return file_list
