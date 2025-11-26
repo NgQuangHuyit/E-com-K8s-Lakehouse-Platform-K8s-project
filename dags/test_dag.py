@@ -14,18 +14,27 @@ S3_BUCKET = "lakehouse"
 SFTP_REMOTE_PATH = "/home/dev/logs/ingest_date={{ ds }}/" 
 REMOTE_S3_PATH = "bronze/user_activity_logs/ingest_date={{ ds }}/" 
 
-def get_sftp_files_to_transfer(sftp_conn_id, sftp_remote_path, **kwargs):
+def get_sftp_files_to_transfer(sftp_conn_id, sftp_remote_path,s3_remote_path, **kwargs):
     """
     Lists files in a given SFTP directory and returns their names.
     """
     logger.info(f"Listing files in SFTP path: {sftp_remote_path}")
     sftp_hook = SFTPHook(ssh_conn_id=sftp_conn_id)
     file_list = sftp_hook.list_directory(sftp_remote_path)
-    source_files = list(map(lambda file_name: f"{sftp_remote_path}{file_name}", file_list))
-    logger.info(f"Files found: {source_files}")
-    target_file_s3_key = list(map(lambda file_name: f"{REMOTE_S3_PATH}{file_name}", file_list))
-    logger.info(f"Target S3 keys: {target_file_s3_key}")
-    return source_files
+    source_target_pairs = file_list.map(
+        lambda file_name: {
+            "source_file": f"{sftp_remote_path}{file_name}",
+            "target_s3_key": f"{s3_remote_path}{file_name}"
+        }
+    )
+    # source_files = list(map(lambda file_name: f"{sftp_remote_path}{file_name}", file_list))
+    # logger.info(f"Files found: {source_files}")
+    # target_file_s3_key = list(map(lambda file_name: f"{REMOTE_S3_PATH}{file_name}", file_list))
+    # logger.info(f"Target S3 keys: {target_file_s3_key}")
+    # return {
+    #     "source_files": source_files,
+    #     "target_file_s3_key": target_file_s3_key
+    # }
 
 
 default_args = {
@@ -50,6 +59,7 @@ with DAG(
         op_kwargs={
             "sftp_conn_id": SFTP_CONN_ID,
             "sftp_remote_path": SFTP_REMOTE_PATH,
+            "s3_remote_path": REMOTE_S3_PATH
         },
     )
 
@@ -59,8 +69,8 @@ with DAG(
         s3_conn_id=S3_CONN_ID,
         s3_bucket=S3_BUCKET,
     ).expand(
-        sftp_path=list_sftp_files_task.output,
-        s3_key=list_sftp_files_task.output.map(lambda source_files: f"{REMOTE_S3_PATH}{source_files.split('/')[-1]}"),
+        sftp_path=list_sftp_files_task.output.map(lambda pair: pair["source_file"]),
+        s3_key=list_sftp_files_task.output.map(lambda pair: pair["target_s3_key"]),
     )
 
 
