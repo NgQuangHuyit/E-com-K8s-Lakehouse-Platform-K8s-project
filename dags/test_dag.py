@@ -27,7 +27,7 @@ with DAG(
         sftp_path="/home/dev/logs/ingest_date={{ ds }}/*.ndjson",
         s3_bucket="lakehouse",
         s3_key="bronze/user_activity_logs/ingest_date={{ ds }}/{{ filename }}",
-        replace=True,     # ghi đè nếu tồn tại
+        overwrite=True,     # ghi đè nếu tồn tại
         use_temp_file=True
     )
 
