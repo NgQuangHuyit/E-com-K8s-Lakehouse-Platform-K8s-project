@@ -60,7 +60,7 @@ with DAG(
         s3_bucket=S3_BUCKET,
     ).expand(
         sftp_path=list_sftp_files_task.output,
-        s3_key=list_sftp_files_task.output.map(lambda file_name: f"{REMOTE_S3_PATH}{file_name}"),
+        s3_key=list_sftp_files_task.output.map(lambda source_files: f"{REMOTE_S3_PATH}{source_files.split('/')[-1]}"),
     )
 
 
