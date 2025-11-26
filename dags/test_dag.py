@@ -22,12 +22,11 @@ with DAG(
     ingest_log = SFTPToS3Operator(
         task_id="ingest_log_file",
         sftp_conn_id="web-server-log",       
-        aws_conn_id="minio_default",    
+        s3_conn_id ="minio_default",    
        
         sftp_path="/home/dev/logs/ingest_date={{ ds }}/*.ndjson",
         s3_bucket="lakehouse",
         s3_key="bronze/user_activity_logs/ingest_date={{ ds }}/{{ filename }}",
-        overwrite=True,     # ghi đè nếu tồn tại
         use_temp_file=True
     )
 
