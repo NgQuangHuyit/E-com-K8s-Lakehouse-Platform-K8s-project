@@ -1,6 +1,7 @@
 from airflow import DAG
 from airflow.providers.amazon.aws.transfers.sql_to_s3 import SqlToS3Operator
 from datetime import datetime
+from airflow.utils.dates import days_ago
 
 S3_CONN_ID = "minio_default"    
 S3_BUCKET = "lakehouse"  
@@ -9,9 +10,11 @@ MYSQL_CONN_ID = "mysql_oltp"
 
 with DAG(
     dag_id='daily_ingestion',
-    start_date=datetime(2023, 1, 1),
-    schedule_interval=None,
-    catchup=False
+    start_date=days_ago(5),
+    schedule_interval="@daily",
+    catchup=True,
+    max_active_runs=1,
+    max_active_tasks=2
 ) as dag:
     # mysql_to_s3_task = SqlToS3Operator(
     #     task_id='transfer_mysql_data_to_s3',
