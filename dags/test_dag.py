@@ -20,7 +20,14 @@ def get_sftp_files_to_transfer(sftp_conn_id, sftp_remote_path,s3_remote_path, **
     """
     logger.info(f"Listing files in SFTP path: {sftp_remote_path}")
     sftp_hook = SFTPHook(ssh_conn_id=sftp_conn_id)
-    file_list = sftp_hook.list_directory(sftp_remote_path)
+    try:
+        file_list = sftp_hook.list_directory(sftp_remote_path)
+    except FileNotFoundError:
+        file_list = []
+    if not file_list:
+        logging.info(f"No files found in {sftp_remote_path}. Skipping transfer.")
+        return []  # Empty list → dynamic task mapping sẽ tạo 0 task
+
     source_target_pairs = [
         {
             "sftp_path": f"{sftp_remote_path}{file_name}",
