@@ -50,11 +50,12 @@ default_args = {
 
 with DAG(
     dag_id="daily_sftp_ingest_log",
-    start_date=days_ago(1),
+    start_date=days_ago(5),
     schedule_interval="0 2 * * *",   
     default_args=default_args,
     catchup=True,     
     max_active_runs=1,
+    max_active_tasks=2
 
 ) as dag:
 
