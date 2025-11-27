@@ -23,8 +23,8 @@ def get_sftp_files_to_transfer(sftp_conn_id, sftp_remote_path,s3_remote_path, **
     file_list = sftp_hook.list_directory(sftp_remote_path)
     source_target_pairs = [
         {
-            "source_file": f"{sftp_remote_path}{file_name}",
-            "target_s3_key": f"{s3_remote_path}{file_name}"
+            "sftp_path": f"{sftp_remote_path}{file_name}",
+            "s3_key": f"{s3_remote_path}{file_name}"
         }
         for file_name in file_list
     ]
@@ -51,7 +51,7 @@ default_args = {
 with DAG(
     dag_id="daily_sftp_ingest_log",
     start_date=days_ago(5),
-    schedule_interval="0 2 * * *",   
+    schedule_interval="@daily",   
     default_args=default_args,
     catchup=True,     
     max_active_runs=1,
@@ -74,9 +74,8 @@ with DAG(
         sftp_conn_id=SFTP_CONN_ID,
         s3_conn_id=S3_CONN_ID,
         s3_bucket=S3_BUCKET,
-    ).expand(
-        sftp_path=[pair["source_file"] for pair in list_sftp_files_task.output],
-        s3_key=[pair["target_s3_key"] for pair in list_sftp_files_task.output],
+    ).expand_kwargs(
+        list_sftp_files_task.output
     )
 
 
