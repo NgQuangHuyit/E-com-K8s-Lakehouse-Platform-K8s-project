@@ -75,8 +75,8 @@ with DAG(
         s3_conn_id=S3_CONN_ID,
         s3_bucket=S3_BUCKET,
     ).expand(
-        sftp_path=list_sftp_files_task.output.map(lambda pair: pair["source_file"]),
-        s3_key=list_sftp_files_task.output.map(lambda pair: pair["target_s3_key"]),
+        sftp_path=[pair["source_file"] for pair in list_sftp_files_task.output],
+        s3_key=[pair["target_s3_key"] for pair in list_sftp_files_task.output],
     )
 
 
