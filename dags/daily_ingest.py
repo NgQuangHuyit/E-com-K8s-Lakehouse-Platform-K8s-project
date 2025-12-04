@@ -35,9 +35,9 @@ with DAG(
     #     replace=True, # Whether to replace the file if it already exists
     #     file_format='csv', # Output file format (e.g., 'csv', 'json')
     # )
-    query_order = 'SELECT * FROM orders where order_date = {{ ds }};'
+    query_order = "SELECT * FROM orders where order_date = '{{ ds }}';"
     
-    query_order_items = 'SELECT oi.* FROM order_items oi JOIN orders o ON oi.order_id = o.order_id where o.order_date = {{ ds }};'
+    query_order_items = "SELECT oi.* FROM order_items oi JOIN orders o ON oi.order_id = o.order_id where o.order_date = '{{ ds }}';"
 
     query_snapshot_brands = 'SELECT * FROM brands;'
 
