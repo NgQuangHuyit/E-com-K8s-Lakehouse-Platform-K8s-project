@@ -59,6 +59,12 @@ with DAG(
         s3_key="bronze/orders/ingest_date={{ ds }}/orders_data.csv",
         replace=True,
         file_format='csv',
+        pd_kwargs={
+        "index": False,   # Bỏ số thứ tự dòng (0, 1, 2...)
+        "header": False,  # Bỏ tên cột (id, name, date...)
+        "encoding": "utf-8" # Đảm bảo file csv đầu ra cũng chuẩn utf-8
+    }
+
     )
 
     order_items_ingestion = SqlToS3Operator(
@@ -70,6 +76,12 @@ with DAG(
         s3_key="bronze/order-items/ingest_date={{ ds }}/order_items_data.csv",
         replace=True,
         file_format='csv',
+        pd_kwargs={
+        "index": False,   # Bỏ số thứ tự dòng (0, 1, 2...)
+        "header": False,  # Bỏ tên cột (id, name, date...)
+        "encoding": "utf-8" # Đảm bảo file csv đầu ra cũng chuẩn utf-8
+    }
+
     )
 
     products_snapshot_ingestion = SqlToS3Operator(
@@ -81,6 +93,12 @@ with DAG(
         s3_key="bronze/products/ingest_date={{ ds }}/products_snapshot.csv",
         replace=True,
         file_format='csv',
+        pd_kwargs={
+        "index": False,   # Bỏ số thứ tự dòng (0, 1, 2...)
+        "header": False,  # Bỏ tên cột (id, name, date...)
+        "encoding": "utf-8" # Đảm bảo file csv đầu ra cũng chuẩn utf-8
+    }
+
     )
 
     categories_snapshot_ingestion = SqlToS3Operator(
@@ -92,6 +110,12 @@ with DAG(
         s3_key="bronze/category/ingest_date={{ ds }}/categories_snapshot.csv",
         replace=True,
         file_format='csv',
+        pd_kwargs={
+        "index": False,   # Bỏ số thứ tự dòng (0, 1, 2...)
+        "header": False,  # Bỏ tên cột (id, name, date...)
+        "encoding": "utf-8" # Đảm bảo file csv đầu ra cũng chuẩn utf-8
+    }
+
     )
 
     customers_snapshot_ingestion = SqlToS3Operator(
@@ -103,6 +127,12 @@ with DAG(
         s3_key="bronze/customer/ingest_date={{ ds }}/customers_snapshot.csv",
         replace=True,
         file_format='csv',
+        pd_kwargs={
+        "index": False,   # Bỏ số thứ tự dòng (0, 1, 2...)
+        "header": False,  # Bỏ tên cột (id, name, date...)
+        "encoding": "utf-8" # Đảm bảo file csv đầu ra cũng chuẩn utf-8
+    }
+
     )
 
     payment_methods_snapshot_ingestion = SqlToS3Operator(
@@ -114,6 +144,11 @@ with DAG(
         s3_key="bronze/payment-method/ingest_date={{ ds }}/payment_methods_snapshot.csv",
         replace=True,
         file_format='csv',
+        pd_kwargs={
+        "index": False,   # Bỏ số thứ tự dòng (0, 1, 2...)
+        "header": False,  # Bỏ tên cột (id, name, date...)
+        "encoding": "utf-8" # Đảm bảo file csv đầu ra cũng chuẩn utf-8
+    }
     )   
 
     brand_snapshot_ingestion = SqlToS3Operator(
@@ -125,6 +160,11 @@ with DAG(
         s3_key="bronze/brands/ingest_date={{ ds }}/brands_snapshot.csv",
         replace=True,
         file_format='csv',
+        pd_kwargs={
+        "index": False,   # Bỏ số thứ tự dòng (0, 1, 2...)
+        "header": False,  # Bỏ tên cột (id, name, date...)
+        "encoding": "utf-8" # Đảm bảo file csv đầu ra cũng chuẩn utf-8
+    }
     )
 
     start_ingest = DummyOperator(
@@ -139,7 +179,8 @@ with DAG(
         products_snapshot_ingestion,
         categories_snapshot_ingestion,
         customers_snapshot_ingestion,
-        payment_methods_snapshot_ingestion
+        payment_methods_snapshot_ingestion,
+        brand_snapshot_ingestion
     ] >> done_ingest
 
 
