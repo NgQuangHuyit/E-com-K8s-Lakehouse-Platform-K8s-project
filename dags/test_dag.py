@@ -3,7 +3,7 @@ from airflow.utils.dates import days_ago
 from airflow.providers.amazon.aws.transfers.sftp_to_s3 import SFTPToS3Operator
 from airflow.providers.sftp.hooks.sftp import SFTPHook
 from airflow.operators.python import PythonOperator
-from datetime import timedelta
+from datetime import datetime, timedelta
 import logging
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ default_args = {
 
 with DAG(
     dag_id="daily_sftp_ingest_log",
-    start_date=days_ago(5),
+    start_date=datetime(2025, 11, 15),
     schedule_interval="@daily",   
     default_args=default_args,
     catchup=True,     
