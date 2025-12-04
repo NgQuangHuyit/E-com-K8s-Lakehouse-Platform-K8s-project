@@ -1,6 +1,6 @@
 from airflow import DAG
 from airflow.providers.amazon.aws.transfers.sql_to_s3 import SqlToS3Operator
-from datetime import datetime
+from datetime import datetime, timedelta
 from airflow.utils.dates import days_ago
 
 from airflow.operators.dummy import DummyOperator
@@ -10,11 +10,18 @@ S3_BUCKET = "lakehouse"
 REMOTE_S3_PATH = "tmp/orders/ingest_date={{ ds }}/" 
 MYSQL_CONN_ID = "mysql_oltp"
 
+default_args = {
+    "owner": "data-team",
+    "retries": 3,
+    "retry_delay": timedelta(minutes=5),
+}
+
 with DAG(
     dag_id='daily_ingestion',
-    start_date=days_ago(5),
-    schedule_interval="@daily",
-    catchup=True,
+    start_date=datetime(2025, 11, 15),
+    schedule_interval="@daily",   
+    default_args=default_args,
+    catchup=True,     
     max_active_runs=1,
     max_active_tasks=2
 ) as dag:
@@ -49,7 +56,7 @@ with DAG(
         aws_conn_id=S3_CONN_ID,
         query=query_order,
         s3_bucket=S3_BUCKET,
-        s3_key=f"bronze/orders/ingest_date={{ ds }}/orders_data.csv",
+        s3_key="bronze/orders/ingest_date={{ ds }}/orders_data.csv",
         replace=True,
         file_format='csv',
     )
@@ -60,7 +67,7 @@ with DAG(
         aws_conn_id=S3_CONN_ID,
         query=query_order_items,
         s3_bucket=S3_BUCKET,
-        s3_key="bronze/order_items/ingest_date={{ ds }}/order_items_data.csv",
+        s3_key="bronze/order-items/ingest_date={{ ds }}/order_items_data.csv",
         replace=True,
         file_format='csv',
     )
@@ -104,10 +111,21 @@ with DAG(
         aws_conn_id=S3_CONN_ID,
         query=query_snapshot_payment_methods,
         s3_bucket=S3_BUCKET,
-        s3_key="bronze/payment_method/ingest_date={{ ds }}/payment_methods_snapshot.csv",
+        s3_key="bronze/payment-method/ingest_date={{ ds }}/payment_methods_snapshot.csv",
         replace=True,
         file_format='csv',
     )   
+
+    brand_snapshot_ingestion = SqlToS3Operator(
+        task_id='transfer_brands_snapshot_to_s3',
+        sql_conn_id=MYSQL_CONN_ID,
+        aws_conn_id=S3_CONN_ID,
+        query=query_snapshot_brands,
+        s3_bucket=S3_BUCKET,
+        s3_key="bronze/brands/ingest_date={{ ds }}/brands_snapshot.csv",
+        replace=True,
+        file_format='csv',
+    )
 
     start_ingest = DummyOperator(
         task_id='start_ingestion'
