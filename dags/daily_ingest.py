@@ -3,6 +3,8 @@ from airflow.providers.amazon.aws.transfers.sql_to_s3 import SqlToS3Operator
 from datetime import datetime
 from airflow.utils.dates import days_ago
 
+from airflow.operators.dummy import DummyOperator
+
 S3_CONN_ID = "minio_default"    
 S3_BUCKET = "lakehouse"  
 REMOTE_S3_PATH = "tmp/orders/ingest_date={{ ds }}/" 
@@ -26,15 +28,101 @@ with DAG(
     #     replace=True, # Whether to replace the file if it already exists
     #     file_format='csv', # Output file format (e.g., 'csv', 'json')
     # )
-    query = 'SELECT * FROM orders Limit 100000'
+    query_order = 'SELECT * FROM orders where order_date = {{ ds }};'
+    
+    query_order_items = 'SELECT oi.* FROM order_items oi JOIN orders o ON oi.order_id = o.order_id where o.order_date = {{ ds }};'
+
+    query_snapshot_brands = 'SELECT * FROM brands;'
+
+    query_snapshot_products = 'SELECT * FROM products;'
+
+    query_snapshot_categories = 'SELECT * FROM categories;'
+
+    query_snapshot_customers = 'SELECT * FROM customers;'
+
+    query_snapshot_payment_methods = 'SELECT * FROM payment_methods;'
+
 
     order_ingestion = SqlToS3Operator(
         task_id='transfer_orders_data_to_s3',
         sql_conn_id=MYSQL_CONN_ID,
         aws_conn_id=S3_CONN_ID,
-        query=query,
+        query=query_order,
         s3_bucket=S3_BUCKET,
-        s3_key=f"{REMOTE_S3_PATH}orders_data.csv",
+        s3_key=f"bronze/orders/ingest_date={{ ds }}/orders_data.csv",
         replace=True,
         file_format='csv',
     )
+
+    order_items_ingestion = SqlToS3Operator(
+        task_id='transfer_order_items_data_to_s3',
+        sql_conn_id=MYSQL_CONN_ID,
+        aws_conn_id=S3_CONN_ID,
+        query=query_order_items,
+        s3_bucket=S3_BUCKET,
+        s3_key="bronze/order_items/ingest_date={{ ds }}/order_items_data.csv",
+        replace=True,
+        file_format='csv',
+    )
+
+    products_snapshot_ingestion = SqlToS3Operator(
+        task_id='transfer_products_snapshot_to_s3',
+        sql_conn_id=MYSQL_CONN_ID,
+        aws_conn_id=S3_CONN_ID,
+        query=query_snapshot_products,
+        s3_bucket=S3_BUCKET,
+        s3_key="bronze/products/ingest_date={{ ds }}/products_snapshot.csv",
+        replace=True,
+        file_format='csv',
+    )
+
+    categories_snapshot_ingestion = SqlToS3Operator(
+        task_id='transfer_categories_snapshot_to_s3',
+        sql_conn_id=MYSQL_CONN_ID,
+        aws_conn_id=S3_CONN_ID,
+        query=query_snapshot_categories,
+        s3_bucket=S3_BUCKET,
+        s3_key="bronze/category/ingest_date={{ ds }}/categories_snapshot.csv",
+        replace=True,
+        file_format='csv',
+    )
+
+    customers_snapshot_ingestion = SqlToS3Operator(
+        task_id='transfer_customers_snapshot_to_s3',
+        sql_conn_id=MYSQL_CONN_ID,
+        aws_conn_id=S3_CONN_ID,
+        query=query_snapshot_customers,
+        s3_bucket=S3_BUCKET,
+        s3_key="bronze/customer/ingest_date={{ ds }}/customers_snapshot.csv",
+        replace=True,
+        file_format='csv',
+    )
+
+    payment_methods_snapshot_ingestion = SqlToS3Operator(
+        task_id='transfer_payment_methods_snapshot_to_s3',
+        sql_conn_id=MYSQL_CONN_ID,
+        aws_conn_id=S3_CONN_ID,
+        query=query_snapshot_payment_methods,
+        s3_bucket=S3_BUCKET,
+        s3_key="bronze/payment_method/ingest_date={{ ds }}/payment_methods_snapshot.csv",
+        replace=True,
+        file_format='csv',
+    )   
+
+    start_ingest = DummyOperator(
+        task_id='start_ingestion'
+    )
+    done_ingest = DummyOperator(
+        task_id='done_ingestion'
+    )
+    start_ingest >> [
+        order_ingestion, 
+        order_items_ingestion,
+        products_snapshot_ingestion,
+        categories_snapshot_ingestion,
+        customers_snapshot_ingestion,
+        payment_methods_snapshot_ingestion
+    ] >> done_ingest
+
+
+    
