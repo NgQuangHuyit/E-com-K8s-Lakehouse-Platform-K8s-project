@@ -56,7 +56,7 @@ with DAG(
         aws_conn_id=S3_CONN_ID,
         query=query_order,
         s3_bucket=S3_BUCKET,
-        s3_key="bronze/orders/ingest_date={{ ds }}/orders_data.csv",
+        s3_key="bronze/orders/orders_data_{{ ds.replace('-', '') }}.csv",
         replace=True,
         file_format='csv',
         pd_kwargs={
@@ -73,7 +73,7 @@ with DAG(
         aws_conn_id=S3_CONN_ID,
         query=query_order_items,
         s3_bucket=S3_BUCKET,
-        s3_key="bronze/order-items/ingest_date={{ ds }}/order_items_data.csv",
+        s3_key="bronze/order-items/order_items_data_{{ ds.replace('-', '') }}.csv",
         replace=True,
         file_format='csv',
         pd_kwargs={
@@ -90,7 +90,7 @@ with DAG(
         aws_conn_id=S3_CONN_ID,
         query=query_snapshot_products,
         s3_bucket=S3_BUCKET,
-        s3_key="bronze/products/ingest_date={{ ds }}/products_snapshot.csv",
+        s3_key="bronze/products/products_snapshot.csv",
         replace=True,
         file_format='csv',
         pd_kwargs={
@@ -107,7 +107,7 @@ with DAG(
         aws_conn_id=S3_CONN_ID,
         query=query_snapshot_categories,
         s3_bucket=S3_BUCKET,
-        s3_key="bronze/category/ingest_date={{ ds }}/categories_snapshot.csv",
+        s3_key="bronze/category/categories_snapshot.csv",
         replace=True,
         file_format='csv',
         pd_kwargs={
@@ -124,7 +124,7 @@ with DAG(
         aws_conn_id=S3_CONN_ID,
         query=query_snapshot_customers,
         s3_bucket=S3_BUCKET,
-        s3_key="bronze/customer/ingest_date={{ ds }}/customers_snapshot.csv",
+        s3_key="bronze/customer/customers_snapshot.csv",
         replace=True,
         file_format='csv',
         pd_kwargs={
@@ -141,7 +141,7 @@ with DAG(
         aws_conn_id=S3_CONN_ID,
         query=query_snapshot_payment_methods,
         s3_bucket=S3_BUCKET,
-        s3_key="bronze/payment-method/ingest_date={{ ds }}/payment_methods_snapshot.csv",
+        s3_key="bronze/payment-method/payment_methods_snapshot.csv",
         replace=True,
         file_format='csv',
         pd_kwargs={
@@ -157,7 +157,7 @@ with DAG(
         aws_conn_id=S3_CONN_ID,
         query=query_snapshot_brands,
         s3_bucket=S3_BUCKET,
-        s3_key="bronze/brands/ingest_date={{ ds }}/brands_snapshot.csv",
+        s3_key="bronze/brands/brands_snapshot.csv",
         replace=True,
         file_format='csv',
         pd_kwargs={
