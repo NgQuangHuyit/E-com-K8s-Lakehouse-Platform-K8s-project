@@ -141,11 +141,12 @@ with DAG(
     # Compile DBT to generate manifest
     dbt_compile = BashOperator(
         task_id="dbt_compile",
-        bash_command=f"cd {DBT_PROJECT_DIR} && dbt debug && dbt compile --log-level debug",
+        bash_command=f"cd {DBT_PROJECT_DIR} && dbt compile",
         env={
             "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
             **os.environ
-        }
+        },
+        append_env=True
     )
 
     # Task Group: Silver layer with auto-generated tasks per model
@@ -161,7 +162,8 @@ with DAG(
                 env={
                     "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
                     **os.environ
-                }
+                },
+                append_env=True
             )
             silver_tasks[model_name] = task
         
