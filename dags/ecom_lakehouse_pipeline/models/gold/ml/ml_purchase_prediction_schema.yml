@@ -1,0 +1,202 @@
+version: 2
+
+models:
+  - name: ml_purchase_prediction_features
+    description: >
+      Feature set cho bài toán dự đoán khả năng mua hàng (Purchase Prediction).
+      Model này tổng hợp và tính toán các features từ user session data để phục vụ
+      training model Machine Learning.
+      
+      **Mục tiêu**: Dự đoán xác suất user sẽ purchase trong session
+      **Ứng dụng**: Targeting quảng cáo, personalized promotion, optimize UX
+      **Label**: has_purchase (binary classification: 0 hoặc 1)
+      
+    config:
+      materialized: table
+      file_format: delta
+      partition_by:
+        - event_date
+    
+    columns:
+      # Identifiers
+      - name: session_id
+        description: Unique identifier cho mỗi user session
+        tests:
+          - unique
+          - not_null
+      
+      - name: event_date
+        description: Ngày của session (partition key)
+        tests:
+          - not_null
+      
+      - name: user_id
+        description: User ID (có thể null cho anonymous users)
+      
+      - name: timestamp
+        description: Thời điểm bắt đầu session
+      
+      # Target Label
+      - name: label
+        description: >
+          **TARGET VARIABLE**: Binary label cho purchase (1 = có purchase, 0 = không).
+          Đây là biến cần dự đoán.
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1, true, false]
+      
+      - name: revenue
+        description: Tổng doanh thu từ session (0 nếu không có purchase)
+      
+      # Core Behavior Features
+      - name: duration_seconds
+        description: >
+          **FEATURE**: Tổng thời gian session (giây).
+          Insight: Session dài thường có engagement cao hơn.
+      
+      - name: actions_count
+        description: >
+          **FEATURE**: Tổng số actions trong session.
+          Insight: Nhiều actions = user active.
+      
+      - name: page_views
+        description: >
+          **FEATURE**: Số lượng page views.
+          Insight: Browsing nhiều có thể là exploration hoặc confusion.
+      
+      - name: action_velocity
+        description: >
+          **FEATURE (Calculated)**: Tốc độ thực hiện actions (actions/second).
+          Formula: actions_count / duration_seconds
+          Insight: Velocity cao = user có mục đích rõ ràng.
+      
+      - name: time_to_first_action
+        description: >
+          **FEATURE**: Thời gian (giây) từ khi vào site đến action đầu tiên.
+          Insight: Action nhanh = intent cao.
+      
+      - name: avg_time_per_page
+        description: >
+          **FEATURE (Calculated)**: Trung bình thời gian trên mỗi page.
+          Formula: duration_seconds / page_views
+          Insight: Engagement depth per page.
+      
+      # Action Type Features
+      - name: num_views
+        description: >
+          **FEATURE**: Số lượng product views.
+          Insight: View nhiều = quan tâm hoặc indecisive.
+      
+      - name: num_add_to_cart
+        description: >
+          **FEATURE**: Số lần add to cart.
+          Insight: Strong purchase intent signal.
+      
+      - name: num_wishlist
+        description: >
+          **FEATURE**: Số lần add to wishlist.
+          Insight: Quan tâm nhưng chưa mua ngay.
+      
+      - name: num_searches
+        description: >
+          **FEATURE**: Số lần search.
+          Insight: User tìm kiếm có mục đích cụ thể.
+      
+      - name: num_reviews
+        description: >
+          **FEATURE**: Số lượng reviews đọc/viết.
+          Insight: Research before purchase.
+      
+      - name: num_remove_from_cart
+        description: >
+          **FEATURE**: Số lần remove khỏi cart.
+          Insight: Indecisive behavior, price sensitivity.
+      
+      - name: has_checkout_view
+        description: >
+          **FEATURE**: Có view checkout page không (1/0).
+          Insight: Rất mạnh signal cho purchase intent.
+      
+      - name: has_search
+        description: >
+          **FEATURE (Boolean)**: Có thực hiện search không.
+          Insight: Goal-oriented behavior.
+      
+      - name: has_cart_removal
+        description: >
+          **FEATURE (Boolean)**: Có remove items khỏi cart không.
+          Insight: Decision uncertainty.
+      
+      - name: cart_conversion_rate
+        description: >
+          **FEATURE (Calculated)**: Tỷ lệ add_to_cart / views.
+          Formula: num_add_to_cart / num_views
+          Insight: Decisiveness metric.
+      
+      # Product Diversity Features
+      - name: unique_products_viewed
+        description: >
+          **FEATURE**: Số lượng unique products đã xem.
+          Insight: Exploration breadth.
+      
+      - name: unique_categories_viewed
+        description: >
+          **FEATURE**: Số lượng unique categories đã xem.
+          Insight: Focused vs broad browsing.
+      
+      # Price Features
+      - name: avg_product_price
+        description: >
+          **FEATURE**: Giá trung bình của products đã xem.
+          Insight: Price range preference.
+      
+      - name: price_range_interest
+        description: >
+          **FEATURE (Calculated)**: Khoảng giá (max - min).
+          Insight: Price sensitivity và exploration range.
+      
+      - name: max_price_viewed
+        description: Giá cao nhất của product đã xem
+      
+      - name: min_price_viewed
+        description: Giá thấp nhất của product đã xem
+      
+      # Temporal Features
+      - name: hour_of_day
+        description: >
+          **FEATURE**: Giờ trong ngày (0-23).
+          Insight: Shopping patterns khác nhau theo giờ.
+      
+      - name: is_weekend
+        description: >
+          **FEATURE**: Session vào cuối tuần không (1/0).
+          Insight: Weekend shopping behavior.
+      
+      # Device Feature
+      - name: is_mobile
+        description: >
+          **FEATURE**: Device là mobile không (1/0).
+          Insight: Mobile vs desktop conversion rates.
+      
+      # User & Marketing Features
+      - name: user_segment
+        description: >
+          **FEATURE (Categorical)**: Phân khúc user (new/returning/loyal/vip).
+          Insight: Loyal users có conversion cao hơn.
+        tests:
+          - accepted_values:
+              values: ['new', 'returning', 'loyal', 'vip']
+      
+      - name: referrer_type
+        description: >
+          **FEATURE (Categorical)**: Loại nguồn traffic 
+          (search_engine/social_media/email/direct/affiliate).
+          Insight: Traffic source quality khác nhau.
+        tests:
+          - accepted_values:
+              values: ['search_engine', 'social_media', 'email', 'direct', 'affiliate']
+
+    tests:
+      - dbt_utils.equal_rowcount:
+          compare_model: ref('user_sessions')

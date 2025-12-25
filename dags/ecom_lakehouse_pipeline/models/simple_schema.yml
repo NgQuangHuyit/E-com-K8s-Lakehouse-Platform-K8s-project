@@ -1,0 +1,65 @@
+version: 2
+
+models:
+  - name: user_sessions
+    description: "Flattened user activity events from bronze layer with device, location, and session info"
+    columns:
+      - name: event_id
+        description: "Unique event identifier"
+        tests:
+          - unique
+          - not_null
+      
+      - name: user_id
+        description: "User identifier"
+        tests:
+          - not_null
+      
+      - name: event_date
+        description: "Date of the event (partition key)"
+        tests:
+          - not_null
+
+  - name: fact_user_behavior
+    description: "Main fact table for user behavior analytics with one row per action"
+    columns:
+      - name: behavior_id
+        description: "Unique behavior identifier (md5 hash of event_id + action_index)"
+        tests:
+          - unique
+          - not_null
+      
+      - name: action_type
+        description: "Type of user action"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['view', 'search', 'add_to_cart', 'remove_from_cart', 'purchase', 'wishlist', 'review']
+      
+      - name: product_sk
+        description: "Foreign key to dim_products"
+        tests:
+          - relationships:
+              to: ref('dim_products')
+              field: product_sk
+      
+      - name: date_sk
+        description: "Foreign key to dim_date"
+        tests:
+          - relationships:
+              to: ref('dim_date')
+              field: date_sk
+
+  - name: fact_daily_metrics
+    description: "Pre-aggregated daily metrics by traffic source and device for dashboard use"
+    columns:
+      - name: metric_date
+        description: "Date of metrics"
+        tests:
+          - not_null
+      
+      - name: active_users
+        description: "Count of distinct users"
+      
+      - name: conversion_rate_pct
+        description: "Percentage of sessions that resulted in purchase"
