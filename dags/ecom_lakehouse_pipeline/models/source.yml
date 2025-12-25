@@ -1,0 +1,151 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: "Raw ingested data from Lakehouse (bronze layer)"
+    schema: bronze            
+    tables:
+      - name: orders
+        description: "Raw order transactions from e-commerce platform"
+        columns:
+          - name: order_id
+            description: "Unique ID for each order"
+          - name: customer_id
+            description: "Foreign key linking to customer table"
+          - name: order_date
+            description: "Datetime when the order was placed"
+          - name: total_amount
+            description: "Total order amount before discount"
+          - name: discount
+            description: "Discount rate applied"
+          - name: total_final
+            description: "Final total after discount"
+          - name: payment_method_id
+            description: "Reference to payment method used"
+          - name: created_at
+            description: "Record creation timestamp"
+          - name: updated_at
+            description: "Last update timestamp"
+
+      - name: order_items
+        description: "Line items for each order"
+        columns:
+          - name: order_item_id
+            description: "Unique line item ID within an order"
+          - name: order_id
+            description: "Foreign key linking to orders table"
+          - name: product_id
+            description: "Foreign key linking to products table"
+          - name: quantity
+            description: "Number of units ordered"
+          - name: unit_price
+            description: "Price per unit"
+
+      - name: products
+        description: "Product master data"
+        columns:
+          - name: product_id
+            description: "Unique ID of the product"
+          - name: product_name
+            description: "Display name of the product"
+          - name: product_description
+            description: "Detailed description of the product"
+          - name: unit_price
+            description: "Price per unit of the product"
+          - name: category_id
+            description: "Foreign key to category"
+          - name: brand_id
+            description: "Foreign key to brand"
+          - name: created_at
+            description: "Record creation timestamp"
+          - name: updated_at
+            description: "Record update timestamp"
+
+      - name: brands
+        description: "Brand reference table"
+        columns:
+          - name: brand_id
+            description: "Unique ID for the brand"
+          - name: brand_name
+            description: "Name of the brand"
+          - name: brand_origin
+            description: "Country of origin for the brand"
+
+      - name: category
+        description: "Product category reference table"
+        columns:
+          - name: category_id
+            description: "Unique ID for the category"
+          - name: category_display_name
+            description: "Category name for display"
+          - name: category_description
+            description: "Detailed description of the category"
+
+      - name: customers
+        description: "Customer master data"
+        columns:
+          - name: customer_id
+            description: "Unique customer ID"
+          - name: first_name
+            description: "Customer first name"
+          - name: last_name
+            description: "Customer last name"
+          - name: email
+            description: "Customer email address"
+          - name: phone_number
+            description: "Customer contact phone"
+          - name: gender
+            description: "Gender of customer"
+          - name: tire
+            description: "Loyalty tier (Bronze/Silver/Gold/Platinum)"
+          - name: created_at
+            description: "Record creation timestamp"
+          - name: updated_at
+            description: "Record update timestamp"
+
+      - name: payment_method
+        description: "Reference table of supported payment methods"
+        columns:
+          - name: payment_method_id
+            description: "Unique ID for payment method"
+          - name: display_name
+            description: "Name of payment method for display"
+          - name: type
+            description: "Type of payment (E-Wallet, Card, Bank Transfer, etc.)"
+          - name: provider
+            description: "Provider organization"
+
+      - name: user_activity_logs
+        description: "User clickstream and behavioral data from e-commerce platform"
+        meta:
+          contains_pii: true
+          data_format: "JSON with nested structures"
+        columns:
+          - name: event_id
+            description: "Unique identifier for each event"
+          - name: timestamp
+            description: "Event occurrence timestamp (ISO 8601 format)"
+          - name: user_id
+            description: "User identifier (null for anonymous users)"
+          - name: user_segment
+            description: "User segment (new, returning, loyal, vip)"
+          - name: session_id
+            description: "Unique session identifier"
+          - name: device
+            description: "Device information (nested: type, os, browser, version)"
+          - name: location
+            description: "Geographic location (nested: city, country, coordinates)"
+          - name: referrer
+            description: "Traffic source URL"
+          - name: referrer_type
+            description: "Type of referrer (search_engine, social_media, direct, email, affiliate)"
+          - name: source
+            description: "Marketing source (email, paid_ads, organic, social, referral, direct)"
+          - name: campaign
+            description: "Marketing campaign name"
+          - name: actions
+            description: "Array of user actions within the session"
+          - name: session_metrics
+            description: "Aggregated session metrics (nested: duration, page_views, actions_count, has_purchase, revenue)"
+          - name: properties
+            description: "Additional properties (nested: ab_test, language, currency, is_mobile)"

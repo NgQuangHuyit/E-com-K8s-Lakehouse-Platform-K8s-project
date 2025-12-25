@@ -1,0 +1,18 @@
+ecom_lakehouse_pipeline:
+  outputs:
+    dev:
+      host: 143.110.214.119
+      method: thrift
+      port: 31000
+      schema: default
+      threads: 1
+      type: spark
+      # Adding S3 configuration to ensure consistent storage location
+      connect_args:
+        hive.metastore.warehouse.dir: s3a://lakehouse
+        # Ensure we use the S3 path, not the local filesystem
+        spark.sql.warehouse.dir: s3a://lakehouse
+    # Use a safe template for schema names: strip a leading prefix
+    # such as 'default_' from the generated schema_name. Example:
+    # 'default_silver' -> 'silver'
+  target: dev
