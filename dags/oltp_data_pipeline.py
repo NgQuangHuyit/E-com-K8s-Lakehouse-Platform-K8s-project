@@ -89,153 +89,127 @@ with DAG(
     #     replace=True, # Whether to replace the file if it already exists
     #     file_format='csv', # Output file format (e.g., 'csv', 'json')
     # )
-    query_order = "SELECT * FROM orders;"
+    # Task Group: Transactional data ingestion
+    with TaskGroup(group_id="ingest_transactional") as transactional_group:
+        order_ingestion = SqlToS3Operator(
+            task_id='transfer_orders',
+            sql_conn_id=MYSQL_CONN_ID,
+            aws_conn_id=S3_CONN_ID,
+            query="SELECT * FROM orders;",
+            s3_bucket=S3_BUCKET,
+            s3_key="bronze/orders/orders_full_load.csv",
+            replace=True,
+            file_format='csv',
+            pd_kwargs={
+                "index": False,
+                "header": False,
+                "encoding": "utf-8"
+            }
+        )
+
+        order_items_ingestion = SqlToS3Operator(
+            task_id='transfer_order_items',
+            sql_conn_id=MYSQL_CONN_ID,
+            aws_conn_id=S3_CONN_ID,
+            query="SELECT * FROM order_items;",
+            s3_bucket=S3_BUCKET,
+            s3_key="bronze/order-items/order_items_full_load.csv",
+            replace=True,
+            file_format='csv',
+            pd_kwargs={
+                "index": False,
+                "header": False,
+                "encoding": "utf-8"
+            }
+        )
+
+    # Task Group: Master data snapshots ingestion
+    with TaskGroup(group_id="ingest_snapshots") as snapshots_group:
+        products_snapshot = SqlToS3Operator(
+            task_id='transfer_products',
+            sql_conn_id=MYSQL_CONN_ID,
+            aws_conn_id=S3_CONN_ID,
+            query='SELECT * FROM products;',
+            s3_bucket=S3_BUCKET,
+            s3_key="bronze/products/products_snapshot.csv",
+            replace=True,
+            file_format='csv',
+            pd_kwargs={
+                "index": False,
+                "header": False,
+                "encoding": "utf-8"
+            }
+        )
+
+        categories_snapshot = SqlToS3Operator(
+            task_id='transfer_categories',
+            sql_conn_id=MYSQL_CONN_ID,
+            aws_conn_id=S3_CONN_ID,
+            query='SELECT * FROM categories;',
+            s3_bucket=S3_BUCKET,
+            s3_key="bronze/category/categories_snapshot.csv",
+            replace=True,
+            file_format='csv',
+            pd_kwargs={
+                "index": False,
+                "header": False,
+                "encoding": "utf-8"
+            }
+        )
+
+        customers_snapshot = SqlToS3Operator(
+            task_id='transfer_customers',
+            sql_conn_id=MYSQL_CONN_ID,
+            aws_conn_id=S3_CONN_ID,
+            query='SELECT * FROM customers;',
+            s3_bucket=S3_BUCKET,
+            s3_key="bronze/customer/customers_snapshot.csv",
+            replace=True,
+            file_format='csv',
+            pd_kwargs={
+                "index": False,
+                "header": False,
+                "encoding": "utf-8"
+            }
+        )
+
+        payment_methods_snapshot = SqlToS3Operator(
+            task_id='transfer_payment_methods',
+            sql_conn_id=MYSQL_CONN_ID,
+            aws_conn_id=S3_CONN_ID,
+            query='SELECT * FROM payment_methods;',
+            s3_bucket=S3_BUCKET,
+            s3_key="bronze/payment-method/payment_methods_snapshot.csv",
+            replace=True,
+            file_format='csv',
+            pd_kwargs={
+                "index": False,
+                "header": False,
+                "encoding": "utf-8"
+            }
+        )
+
+        brands_snapshot = SqlToS3Operator(
+            task_id='transfer_brands',
+            sql_conn_id=MYSQL_CONN_ID,
+            aws_conn_id=S3_CONN_ID,
+            query='SELECT * FROM brands;',
+            s3_bucket=S3_BUCKET,
+            s3_key="bronze/brands/brands_snapshot.csv",
+            replace=True,
+            file_format='csv',
+            pd_kwargs={
+                "index": False,
+                "header": False,
+                "encoding": "utf-8"
+            }
+        )
+
+    # Ingestion coordination
+    start_ingest = DummyOperator(task_id='start_ingestion')
+    done_ingest = DummyOperator(task_id='done_ingestion')
     
-    query_order_items = "SELECT * FROM order_items;"
-
-    query_snapshot_brands = 'SELECT * FROM brands;'
-
-    query_snapshot_products = 'SELECT * FROM products;'
-
-    query_snapshot_categories = 'SELECT * FROM categories;'
-
-    query_snapshot_customers = 'SELECT * FROM customers;'
-
-    query_snapshot_payment_methods = 'SELECT * FROM payment_methods;'
-
-
-    order_ingestion = SqlToS3Operator(
-        task_id='transfer_orders_data_to_s3',
-        sql_conn_id=MYSQL_CONN_ID,
-        aws_conn_id=S3_CONN_ID,
-        query=query_order,
-        s3_bucket=S3_BUCKET,
-        s3_key="bronze/orders/orders_full_load.csv",
-        replace=True,
-        file_format='csv',
-        pd_kwargs={
-        "index": False,   # Bỏ số thứ tự dòng (0, 1, 2...)
-        "header": False,  # Bỏ tên cột (id, name, date...)
-        "encoding": "utf-8" # Đảm bảo file csv đầu ra cũng chuẩn utf-8
-    }
-
-    )
-
-    order_items_ingestion = SqlToS3Operator(
-        task_id='transfer_order_items_data_to_s3',
-        sql_conn_id=MYSQL_CONN_ID,
-        aws_conn_id=S3_CONN_ID,
-        query=query_order_items,
-        s3_bucket=S3_BUCKET,
-        s3_key="bronze/order-items/order_items_full_load.csv",
-        replace=True,
-        file_format='csv',
-        pd_kwargs={
-        "index": False,   # Bỏ số thứ tự dòng (0, 1, 2...)
-        "header": False,  # Bỏ tên cột (id, name, date...)
-        "encoding": "utf-8" # Đảm bảo file csv đầu ra cũng chuẩn utf-8
-    }
-
-    )
-
-    products_snapshot_ingestion = SqlToS3Operator(
-        task_id='transfer_products_snapshot_to_s3',
-        sql_conn_id=MYSQL_CONN_ID,
-        aws_conn_id=S3_CONN_ID,
-        query=query_snapshot_products,
-        s3_bucket=S3_BUCKET,
-        s3_key="bronze/products/products_snapshot.csv",
-        replace=True,
-        file_format='csv',
-        pd_kwargs={
-        "index": False,   # Bỏ số thứ tự dòng (0, 1, 2...)
-        "header": False,  # Bỏ tên cột (id, name, date...)
-        "encoding": "utf-8" # Đảm bảo file csv đầu ra cũng chuẩn utf-8
-    }
-
-    )
-
-    categories_snapshot_ingestion = SqlToS3Operator(
-        task_id='transfer_categories_snapshot_to_s3',
-        sql_conn_id=MYSQL_CONN_ID,
-        aws_conn_id=S3_CONN_ID,
-        query=query_snapshot_categories,
-        s3_bucket=S3_BUCKET,
-        s3_key="bronze/category/categories_snapshot.csv",
-        replace=True,
-        file_format='csv',
-        pd_kwargs={
-        "index": False,   # Bỏ số thứ tự dòng (0, 1, 2...)
-        "header": False,  # Bỏ tên cột (id, name, date...)
-        "encoding": "utf-8" # Đảm bảo file csv đầu ra cũng chuẩn utf-8
-    }
-
-    )
-
-    customers_snapshot_ingestion = SqlToS3Operator(
-        task_id='transfer_customers_snapshot_to_s3',
-        sql_conn_id=MYSQL_CONN_ID,
-        aws_conn_id=S3_CONN_ID,
-        query=query_snapshot_customers,
-        s3_bucket=S3_BUCKET,
-        s3_key="bronze/customer/customers_snapshot.csv",
-        replace=True,
-        file_format='csv',
-        pd_kwargs={
-        "index": False,   # Bỏ số thứ tự dòng (0, 1, 2...)
-        "header": False,  # Bỏ tên cột (id, name, date...)
-        "encoding": "utf-8" # Đảm bảo file csv đầu ra cũng chuẩn utf-8
-    }
-
-    )
-
-    payment_methods_snapshot_ingestion = SqlToS3Operator(
-        task_id='transfer_payment_methods_snapshot_to_s3',
-        sql_conn_id=MYSQL_CONN_ID,
-        aws_conn_id=S3_CONN_ID,
-        query=query_snapshot_payment_methods,
-        s3_bucket=S3_BUCKET,
-        s3_key="bronze/payment-method/payment_methods_snapshot.csv",
-        replace=True,
-        file_format='csv',
-        pd_kwargs={
-        "index": False,   # Bỏ số thứ tự dòng (0, 1, 2...)
-        "header": False,  # Bỏ tên cột (id, name, date...)
-        "encoding": "utf-8" # Đảm bảo file csv đầu ra cũng chuẩn utf-8
-    }
-    )   
-
-    brand_snapshot_ingestion = SqlToS3Operator(
-        task_id='transfer_brands_snapshot_to_s3',
-        sql_conn_id=MYSQL_CONN_ID,
-        aws_conn_id=S3_CONN_ID,
-        query=query_snapshot_brands,
-        s3_bucket=S3_BUCKET,
-        s3_key="bronze/brands/brands_snapshot.csv",
-        replace=True,
-        file_format='csv',
-        pd_kwargs={
-        "index": False,   # Bỏ số thứ tự dòng (0, 1, 2...)
-        "header": False,  # Bỏ tên cột (id, name, date...)
-        "encoding": "utf-8" # Đảm bảo file csv đầu ra cũng chuẩn utf-8
-    }
-    )
-
-    start_ingest = DummyOperator(
-        task_id='start_ingestion'
-    )
-    done_ingest = DummyOperator(
-        task_id='done_ingestion'
-    )
-    start_ingest >> [
-        order_ingestion, 
-        order_items_ingestion,
-        products_snapshot_ingestion,
-        categories_snapshot_ingestion,
-        customers_snapshot_ingestion,
-        payment_methods_snapshot_ingestion,
-        brand_snapshot_ingestion
-    ] >> done_ingest
+    start_ingest >> [transactional_group, snapshots_group] >> done_ingest
 
     # Compile DBT to generate manifest
     dbt_compile = BashOperator(
