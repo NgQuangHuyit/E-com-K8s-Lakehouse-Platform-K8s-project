@@ -1,9 +1,9 @@
 ecom_lakehouse_pipeline:
   outputs:
     dev:
-      host: 143.110.214.119
+      host: spark-thrift-service.lakehouse.svc.cluster.local
       method: thrift
-      port: 31000
+      port: 10000
       schema: default
       threads: 1
       type: spark
