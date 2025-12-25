@@ -71,13 +71,13 @@ default_args = {
 }
 
 with DAG(
-    dag_id='oltp_full_load_pipeline',
+    dag_id='oltp_data_pipeline',
     start_date=datetime(2025, 11, 15),
     schedule_interval=None,   
     default_args=default_args,
     catchup=False,     
     max_active_runs=1,
-    max_active_tasks=4
+    max_active_tasks=1
 ) as dag:
     # mysql_to_s3_task = SqlToS3Operator(
     #     task_id='transfer_mysql_data_to_s3',
@@ -273,7 +273,7 @@ with DAG(
     # DBT test tasks
     dbt_test_silver = BashOperator(
         task_id="dbt_test_silver",
-        bash_command=f"cd {DBT_PROJECT_DIR} && dbt test --select silver/oltp",
+        bash_command=f"cd {DBT_PROJECT_DIR} && dbt test --select orders orders_items customers products categories brands payment_method",
         env={
             "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
             **os.environ
@@ -283,7 +283,7 @@ with DAG(
 
     dbt_test_gold = BashOperator(
         task_id="dbt_test_gold",
-        bash_command=f"cd {DBT_PROJECT_DIR} && dbt test --select gold/sale_mart",
+        bash_command=f"cd {DBT_PROJECT_DIR} && dbt test --select fact_orders dim_date dim_customers dim_payment_methods",
         env={
             "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
             **os.environ
