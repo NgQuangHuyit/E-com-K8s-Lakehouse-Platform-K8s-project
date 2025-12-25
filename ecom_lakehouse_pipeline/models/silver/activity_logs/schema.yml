@@ -1,0 +1,139 @@
+version: 2
+
+models:
+  - name: user_sessions
+    description: "Cleaned and structured user session data from activity logs"
+    columns:
+      - name: session_id
+        description: "Unique identifier for each session"
+        tests:
+          - unique
+          - not_null
+      
+      - name: user_id
+        description: "User identifier for the session"
+        tests:
+          - not_null
+      
+      - name: timestamp
+        description: "Session start timestamp"
+        tests:
+          - not_null
+      
+      - name: duration_seconds
+        description: "Session duration in seconds"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 86400  # Max 24 hours
+      
+      - name: page_views
+        description: "Number of pages viewed in session"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+      
+      - name: actions_count
+        description: "Total number of actions in session"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+      
+      - name: has_purchase
+        description: "Whether session resulted in a purchase"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [true, false]
+      
+      - name: revenue
+        description: "Revenue generated from session"
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      
+      - name: device_type
+        description: "Device type used in session"
+        tests:
+          - accepted_values:
+              values: ['mobile', 'desktop', 'tablet']
+      
+      - name: utm_source
+        description: "Traffic source"
+        tests:
+          - not_null
+
+  - name: session_actions
+    description: "Individual user actions extracted from session logs"
+    columns:
+      - name: action_id
+        description: "Unique identifier for each action"
+        tests:
+          - unique
+          - not_null
+      
+      - name: session_id
+        description: "Session that contains this action"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('user_sessions')
+              field: session_id
+      
+      - name: action_timestamp
+        description: "Timestamp when action occurred"
+        tests:
+          - not_null
+      
+      - name: action_type
+        description: "Type of action performed"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['view', 'add_to_cart', 'purchase', 'search', 'wishlist', 'review', 'remove_from_cart']
+      
+      - name: product_id
+        description: "Product ID if action relates to a product"
+      
+      - name: is_view
+        description: "Flag for view actions"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      
+      - name: is_add_to_cart
+        description: "Flag for add to cart actions"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      
+      - name: is_purchase
+        description: "Flag for purchase actions"
+        tests:
+          - accepted_values:
+              values: [0, 1]
+      
+      - name: year
+        description: "Partition column: year"
+        tests:
+          - not_null
+      
+      - name: month
+        description: "Partition column: month"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 12
+      
+      - name: day
+        description: "Partition column: day"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 31
