@@ -27,7 +27,7 @@ SELECT
         COUNT(DISTINCT a.product_id) AS distinct_products_viewed,
         AVG(CAST(a.product_price AS DOUBLE)) AS avg_product_price,
         SUM(CAST(a.revenue AS DOUBLE)) AS action_revenue
-    FROM {{ ref('user_actions') }} a
+    FROM {{ ref('session_actions') }} a
     INNER JOIN {{ ref('user_sessions') }} s ON a.session_id = s.session_id
     {% if is_incremental() %}
     WHERE CAST(a.action_timestamp AS DATE) >= (SELECT date_sub(min_date, 3) FROM date_filter)
