@@ -1,0 +1,206 @@
+version: 2
+
+models:
+  - name: orders
+    description: "Cleaned order data from OLTP system"
+    columns:
+      - name: order_id
+        description: "Unique order identifier"
+        tests:
+          - unique
+          - not_null
+      
+      - name: customer_id
+        description: "Customer who placed the order"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('customers')
+              field: customer_id
+      
+      - name: order_date
+        description: "Date when order was placed"
+        tests:
+          - not_null
+      
+      - name: total_amount
+        description: "Total order amount"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+      
+      - name: payment_method_id
+        description: "Payment method used"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('payment_method')
+              field: payment_method_id
+
+  - name: orders_items
+    description: "Order line items"
+    columns:
+      - name: order_item_id
+        description: "Unique order item identifier"
+        tests:
+          - unique
+          - not_null
+      
+      - name: order_id
+        description: "Order this item belongs to"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('orders')
+              field: order_id
+      
+      - name: product_id
+        description: "Product ordered"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('products')
+              field: product_id
+      
+      - name: quantity
+        description: "Quantity ordered"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 1000
+      
+      - name: price
+        description: "Item price"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+  - name: customers
+    description: "Customer master data"
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier"
+        tests:
+          - unique
+          - not_null
+      
+      - name: email
+        description: "Customer email address"
+        tests:
+          - not_null
+          - unique
+      
+      - name: first_name
+        description: "Customer first name"
+        tests:
+          - not_null
+      
+      - name: last_name
+        description: "Customer last name"
+        tests:
+          - not_null
+      
+      - name: gender
+        description: "Customer gender"
+        tests:
+          - accepted_values:
+              values: ['Male', 'Female', 'Other']
+      
+      - name: tier
+        description: "Customer tier/segment"
+        tests:
+          - accepted_values:
+              values: ['Bronze', 'Silver', 'Gold', 'Platinum']
+
+  - name: products
+    description: "Product master data"
+    columns:
+      - name: product_id
+        description: "Unique product identifier"
+        tests:
+          - unique
+          - not_null
+      
+      - name: product_name
+        description: "Product name"
+        tests:
+          - not_null
+      
+      - name: category_id
+        description: "Product category"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('categories')
+              field: category_id
+      
+      - name: brand_id
+        description: "Product brand"
+        tests:
+          - relationships:
+              to: ref('brands')
+              field: brand_id
+      
+      - name: price
+        description: "Product price"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: false
+      
+      - name: stock_quantity
+        description: "Current stock level"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+  - name: categories
+    description: "Product categories"
+    columns:
+      - name: category_id
+        description: "Unique category identifier"
+        tests:
+          - unique
+          - not_null
+      
+      - name: category_name
+        description: "Category name"
+        tests:
+          - not_null
+          - unique
+
+  - name: brands
+    description: "Product brands"
+    columns:
+      - name: brand_id
+        description: "Unique brand identifier"
+        tests:
+          - unique
+          - not_null
+      
+      - name: brand_name
+        description: "Brand name"
+        tests:
+          - not_null
+          - unique
+
+  - name: payment_method
+    description: "Payment methods"
+    columns:
+      - name: payment_method_id
+        description: "Unique payment method identifier"
+        tests:
+          - unique
+          - not_null
+      
+      - name: payment_method_name
+        description: "Payment method name"
+        tests:
+          - not_null
+          - unique

@@ -19,7 +19,7 @@ SFTP_REMOTE_PATH = "/home/dev/logs/ingest_date={{ ds }}/"
 REMOTE_S3_PATH = "bronze/user_activity_logs/ingest_date={{ ds }}/" 
 
 # DBT configuration
-DBT_PROJECT_DIR = os.getenv("DBT_HOME_PROJECT", "/opt/airflow/dbt/ecom_lakehouse_pipeline")
+DBT_PROJECT_DIR = os.getenv("DBT_HOME_PROJECT", "/opt/airflow/dags/repo/dags/ecom_lakehouse_pipeline")
 DBT_MANIFEST_PATH = f"{DBT_PROJECT_DIR}/target/manifest.json"
 
 
@@ -109,7 +109,7 @@ default_args = {
 }
 
 with DAG(
-    dag_id="daily_user_activity_logs_pipeline",
+    dag_id="user_activity_logs_data_pipeline",
     start_date=datetime(2025, 11, 15),
     schedule_interval=None,  
     default_args=default_args,
@@ -141,7 +141,7 @@ with DAG(
     # Compile DBT to generate manifest
     dbt_compile = BashOperator(
         task_id="dbt_compile",
-        bash_command=f"cd {DBT_PROJECT_DIR} && dbt compile",
+        bash_command=f"cd {DBT_PROJECT_DIR} && dbt debug && dbt compile --log-level debug",
         env={
             "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
             **os.environ
@@ -184,7 +184,8 @@ with DAG(
                 env={
                     "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
                     **os.environ
-                }
+                },
+                append_env=True
             )
             gold_tasks[model_name] = task
         
@@ -194,5 +195,26 @@ with DAG(
                 if upstream_model in gold_tasks:
                     gold_tasks[upstream_model] >> gold_tasks[model_name]
 
+    # DBT test tasks
+    dbt_test_silver = BashOperator(
+        task_id="dbt_test_silver",
+        bash_command=f"cd {DBT_PROJECT_DIR} && dbt test --select silver/activity_logs",
+        env={
+            "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
+            **os.environ
+        },
+        append_env=True
+    )
+
+    dbt_test_gold = BashOperator(
+        task_id="dbt_test_gold",
+        bash_command=f"cd {DBT_PROJECT_DIR} && dbt test --select gold/ml",
+        env={
+            "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
+            **os.environ
+        },
+        append_env=True
+    )
+
     # Task dependencies across layers
-    list_sftp_files_task >> transfer_file_to_s3 >> dbt_compile >> silver_group >> gold_group
+    list_sftp_files_task >> transfer_file_to_s3 >> dbt_compile >> silver_group >> dbt_test_silver >> gold_group >> dbt_test_gold
