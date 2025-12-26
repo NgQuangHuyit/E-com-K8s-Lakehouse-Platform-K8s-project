@@ -166,4 +166,4 @@ with DAG(
     )
 
     # Task dependencies
-    spark_inference_job >> dbt_compile >> temp_tables_group >> marketing_group >> dbt_test_marketing
+    spark_inference_job >> dbt_compile >> marketing_group >> dbt_test_marketing
