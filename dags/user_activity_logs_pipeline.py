@@ -115,7 +115,7 @@ with DAG(
     default_args=default_args,
     catchup=True,     
     max_active_runs=1,
-    max_active_tasks=2
+    max_active_tasks=1
 
 ) as dag:
 
