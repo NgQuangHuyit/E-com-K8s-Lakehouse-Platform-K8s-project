@@ -130,30 +130,6 @@ with DAG(
         append_env=True
     )
 
-    # Task Group: Gold ML layer (staging tables)
-    with TaskGroup(group_id="marketing_temp_tables") as temp_tables_group:
-        temp_models = parse_dbt_manifest("gold/marketing/temp")
-        temp_tasks = {}
-        
-        # Create task for each temp model
-        for model_name, model_info in temp_models.items():
-            task = BashOperator(
-                task_id=f"run_{model_name}",
-                bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name}",
-                env={
-                    "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
-                    **os.environ
-                },
-                append_env=True
-            )
-            temp_tasks[model_name] = task
-        
-        # Set dependencies based on DBT lineage
-        for model_name, model_info in temp_models.items():
-            for upstream_model in model_info['upstream']:
-                if upstream_model in temp_tasks:
-                    temp_tasks[upstream_model] >> temp_tasks[model_name]
-
     # Task Group: Gold Marketing layer
     with TaskGroup(group_id="gold_marketing") as marketing_group:
         marketing_models = parse_dbt_manifest("gold/marketing")
