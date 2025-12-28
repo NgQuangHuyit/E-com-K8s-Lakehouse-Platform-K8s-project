@@ -94,7 +94,7 @@ with DAG(
                 WHERE DATE_FORMAT(order_date, '%Y-%m') = '{{ ds[:7] }}'
                 """,
             s3_bucket=S3_BUCKET,
-            s3_key="bronze/orders/year={{ ds[:4] }}/month={{ ds[5:7] }}/orders_{{ ds[:4] }}{{ ds[5:7] }}01.csv",
+            s3_key="bronze/orders/year={{ ds[:4] }}/month={{ ds[5:7] }}/orders_{{ ds[:4] }}{{ ds[5:7] }}.csv",
             replace=True,
             file_format='csv',
             pd_kwargs={
@@ -119,7 +119,7 @@ with DAG(
                 JOIN monthly_orders mo ON oi.order_id = mo.order_id
                 """,
             s3_bucket=S3_BUCKET,
-            s3_key="bronze/order-items/year={{ ds[:4] }}/month={{ ds[5:7] }}/order_items_{{ ds[:4] }}{{ ds[5:7] }}01.csv",
+            s3_key="bronze/order-items/year={{ ds[:4] }}/month={{ ds[5:7] }}/order_items_{{ ds[:4] }}{{ ds[5:7] }}.csv",
             replace=True,
             file_format='csv',
             pd_kwargs={
@@ -215,15 +215,28 @@ with DAG(
     start_ingest = DummyOperator(task_id='start_ingestion')
     done_ingest = DummyOperator(task_id='done_ingestion')
     
-    spark_partition_update = JdbcOperator(
-                                task_id="update_spark_partition",
-                                jdbc_conn_id="spark_thrift_default",
-                                sql="MSCK repair table bronze.orders",
-                                hook_params={
-                                    "driver_class": "org.apache.hive.jdbc.HiveDriver",
-                                    "driver_path": "/opt/airflow/jars/hive-jdbc-3.1.3-standalone.jar"
-                                }
-                            )
+    with TaskGroup(group_id="spark_partition_update") as spark_partition_update:
+
+        spark_partition_update_orders = JdbcOperator(
+                                    task_id="update_spark_partition",
+                                    jdbc_conn_id="spark_thrift_default",
+                                    sql="MSCK repair table bronze.orders",
+                                    hook_params={
+                                        "driver_class": "org.apache.hive.jdbc.HiveDriver",
+                                        "driver_path": "/opt/airflow/jars/hive-jdbc-3.1.3-standalone.jar"
+                                    }
+                                )
+        spark_partition_update_order_items = JdbcOperator(
+                                    task_id="update_spark_partition_order_items",
+                                    jdbc_conn_id="spark_thrift_default",
+                                    sql="MSCK repair table bronze.order_items",
+                                    hook_params={
+                                        "driver_class": "org.apache.hive.jdbc.HiveDriver",
+                                        "driver_path": "/opt/airflow/jars/hive-jdbc-3.1.3-standalone.jar"
+                                    }
+                                )
+        spark_partition_update_orders >> spark_partition_update_order_items
+    
     start_ingest >> [transactional_group, snapshots_group] >> done_ingest >> spark_partition_update
 
 
