@@ -5,6 +5,8 @@ from airflow.providers.sftp.hooks.sftp import SFTPHook
 from airflow.operators.python import PythonOperator
 from airflow.operators.bash import BashOperator
 from airflow.utils.task_group import TaskGroup
+
+from airflow.providers.jdbc.operators.jdbc import JdbcOperator
 from datetime import datetime, timedelta
 import logging
 import os
@@ -137,7 +139,15 @@ with DAG(
     ).expand_kwargs(
         list_sftp_files_task.output
     )
-
+    spark_partition_update_user_activity_logs = JdbcOperator(
+                                    task_id="update_spark_partition_user_activity_logs",
+                                    jdbc_conn_id="spark_thrift_default",
+                                    sql="MSCK repair table bronze.user_activity_logs;",
+                                    hook_params={
+                                        "driver_class": "org.apache.hive.jdbc.HiveDriver",
+                                        "driver_path": "/opt/airflow/jars/hive-jdbc-3.1.3-standalone.jar"
+                                    }
+                                )
     # Compile DBT to generate manifest
     dbt_compile = BashOperator(
         task_id="dbt_compile",
@@ -221,4 +231,4 @@ with DAG(
     )
 
     # Task dependencies across layers
-    list_sftp_files_task >> transfer_file_to_s3 >> dbt_compile >> silver_group >> dbt_test_silver >> gold_group >> dbt_test_gold
+    list_sftp_files_task >> transfer_file_to_s3 >> spark_partition_update_user_activity_logs >> dbt_compile >> silver_group >> dbt_test_silver >> gold_group >> dbt_test_gold
