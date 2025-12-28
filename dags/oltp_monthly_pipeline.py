@@ -218,8 +218,7 @@ with DAG(
     spark_partition_update = JdbcOperator(
                                 task_id="update_spark_partition",
                                 jdbc_conn_id="spark_thrift_default",
-                                sql="MSCK repair table bronze.orders;" \
-                                "MSCK repair table bronze.order_items;",
+                                sql="MSCK repair table bronze.orders",
                                 hook_params={
                                     "driver_class": "org.apache.hive.jdbc.HiveDriver",
                                     "driver_path": "/opt/airflow/jars/hive-jdbc-3.1.3-standalone.jar"
