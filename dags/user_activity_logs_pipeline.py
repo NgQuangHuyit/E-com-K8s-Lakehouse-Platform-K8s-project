@@ -111,7 +111,7 @@ default_args = {
 with DAG(
     dag_id="user_activity_logs_data_pipeline",
     start_date=datetime(2025, 11, 15),
-    schedule_interval=None,  
+    schedule_interval='@daily',  
     default_args=default_args,
     catchup=True,     
     max_active_runs=1,
