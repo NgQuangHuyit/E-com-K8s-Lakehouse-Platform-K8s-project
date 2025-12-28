@@ -149,3 +149,41 @@ sources:
             description: "Aggregated session metrics (nested: duration, page_views, actions_count, has_purchase, revenue)"
           - name: properties
             description: "Additional properties (nested: ab_test, language, currency, is_mobile)"
+
+  - name: ml
+    description: "Machine Learning layer containing features and predictions"
+    schema: ml
+    tables:
+      - name: user_behavior_3d_agg_feature
+        description: "Aggregated user behavior features over 3-day rolling windows for ML model input"
+        columns:
+          - name: customer_id
+            description: "Unique customer identifier"
+          - name: feature_date
+            description: "Date for which features are calculated"
+          - name: total_sessions_3d
+            description: "Total number of sessions in last 3 days"
+          - name: total_page_views_3d
+            description: "Total page views in last 3 days"
+          - name: total_add_to_cart_3d
+            description: "Total add-to-cart actions in last 3 days"
+          - name: total_purchases_3d
+            description: "Total purchases in last 3 days"
+          - name: engagement_score
+            description: "Composite engagement score"
+      
+      - name: next_day_purchase_prediction
+        description: "ML model predictions for next-day purchase probability"
+        columns:
+          - name: customer_id
+            description: "Unique customer identifier"
+          - name: prediction_date
+            description: "Date for which prediction is made"
+          - name: will_purchase_next_day
+            description: "Binary prediction (0 = no purchase, 1 = purchase)"
+          - name: purchase_probability
+            description: "Probability score (0.0-1.0)"
+          - name: predicted_at
+            description: "Timestamp when prediction was generated"
+          - name: model_version
+            description: "Version of ML model used for prediction"

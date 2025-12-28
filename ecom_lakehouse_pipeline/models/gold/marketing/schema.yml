@@ -1,0 +1,239 @@
+version: 2
+
+models:
+  - name: high_value_purchase_campaign
+    description: >
+      Unified marketing campaign dataset targeting customers with high purchase probability.
+      Segments customers by likelihood to purchase and provides actionable campaign recommendations.
+      This dataset combines insights for personalized campaigns, cart recovery, and re-engagement.
+      
+      **Target Use Cases:**
+      - Personalized email campaigns and push notifications
+      - Cart abandonment recovery
+      - Dormant customer re-engagement
+      - Dynamic offer optimization
+      - Customer lifetime value optimization
+      
+      **Refresh Schedule:** Daily after ML inference job completes
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier"
+        tests:
+          - not_null
+          - unique
+      
+      - name: campaign_date
+        description: "Date for which the campaign is targeted"
+        tests:
+          - not_null
+      
+      - name: purchase_probability
+        description: "ML model predicted probability of purchase (0.0-1.0)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+      
+      - name: customer_segment
+        description: "Customer segment based on purchase probability (Hot Lead, Warm Lead, Cold Lead)"
+        tests:
+          - accepted_values:
+              values: ['Hot Lead', 'Warm Lead', 'Cold Lead', 'Low Priority']
+      
+      - name: campaign_priority_score
+        description: "Composite score (0-100) combining prediction, engagement, and recency for campaign prioritization"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 100
+      
+      - name: recommended_campaign_action
+        description: "Suggested campaign action based on customer behavior and prediction"
+        tests:
+          - not_null
+      
+      - name: email
+        description: "Customer email for campaign delivery"
+      
+      - name: phone
+        description: "Customer phone number for SMS campaigns"
+      
+      - name: estimated_clv
+        description: "Estimated customer lifetime value based on historical behavior and prediction"
+      
+      - name: primary_contact_channel
+        description: "Recommended primary channel for customer contact (Email, SMS, In-App)"
+        tests:
+          - accepted_values:
+              values: ['Email', 'SMS', 'In-App']
+      
+      - name: engagement_score
+        description: "Customer engagement score from behavioral features"
+      
+      - name: total_sessions_3d
+        description: "Number of sessions in last 3 days"
+      
+      - name: days_since_last_purchase
+        description: "Days elapsed since customer's last purchase"
+      
+      - name: orders_count_30d
+        description: "Number of orders placed in last 30 days"
+      
+      - name: total_spent_30d
+        description: "Total amount spent in last 30 days"
+      
+      - name: created_at
+        description: "Timestamp when record was created"
+        tests:
+          - not_null
+
+  - name: cart_abandonment_recovery_campaign
+    description: >
+      Campaign dataset for recovering abandoned shopping carts.
+      Identifies customers who added items to cart but didn't complete purchase,
+      prioritized by purchase probability and estimated cart value.
+      
+      **Target Use Cases:**
+      - Cart abandonment email campaigns
+      - Retargeting ads
+      - Time-sensitive discount offers
+      - SMS reminders
+      
+      **Refresh Schedule:** Daily
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier"
+        tests:
+          - not_null
+          - unique
+      
+      - name: email
+        description: "Customer email for campaign delivery"
+        tests:
+          - not_null
+      
+      - name: items_in_cart
+        description: "Number of items added to cart in last 3 days"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+      
+      - name: estimated_cart_value
+        description: "Estimated monetary value of abandoned cart"
+      
+      - name: purchase_probability
+        description: "ML predicted probability of completing purchase"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.0
+              max_value: 1.0
+      
+      - name: recovery_priority
+        description: "Priority level for cart recovery campaign"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Urgent - High Value', 'High Priority', 'Medium Priority', 'Low Priority']
+      
+      - name: recommended_incentive
+        description: "Suggested incentive to encourage purchase completion"
+        tests:
+          - not_null
+      
+      - name: campaign_date
+        description: "Date of campaign execution"
+        tests:
+          - not_null
+      
+      - name: created_at
+        description: "Timestamp when record was created"
+
+  - name: dormant_customer_reengagement_campaign
+    description: >
+      Re-engagement campaign dataset for dormant customers.
+      Targets customers who haven't purchased in 30+ days but show high purchase intent
+      based on ML predictions. Segmented by dormancy period and lifetime value.
+      
+      **Target Use Cases:**
+      - Win-back campaigns
+      - VIP customer retention
+      - Exclusive re-engagement offers
+      - Loyalty program promotions
+      
+      **Refresh Schedule:** Daily
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier"
+        tests:
+          - not_null
+          - unique
+      
+      - name: email
+        description: "Customer email for campaign delivery"
+        tests:
+          - not_null
+      
+      - name: days_since_last_purchase
+        description: "Number of days since customer's last purchase"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 30
+      
+      - name: last_order_date
+        description: "Date of customer's most recent order"
+      
+      - name: total_orders
+        description: "Total number of orders placed historically"
+      
+      - name: lifetime_value
+        description: "Total amount customer has spent historically"
+      
+      - name: avg_order_value
+        description: "Average order value for this customer"
+      
+      - name: purchase_probability
+        description: "ML predicted probability of returning to purchase"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0.6
+              max_value: 1.0
+      
+      - name: dormancy_segment
+        description: "Customer segmentation by dormancy period"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Long Dormant (6+ months)', 'Medium Dormant (3-6 months)', 'Recently Dormant (1-3 months)', 'Active']
+      
+      - name: value_tier
+        description: "Customer value tier based on lifetime spending"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['VIP', 'High Value', 'Medium Value', 'Low Value']
+      
+      - name: campaign_priority
+        description: "Priority level for re-engagement campaign"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['VIP Re-engagement', 'High Priority', 'Standard Priority', 'Low Priority']
+      
+      - name: recommended_offer
+        description: "Tailored offer recommendation based on customer value and dormancy"
+        tests:
+          - not_null
+      
+      - name: campaign_date
+        description: "Date of campaign execution"
+        tests:
+          - not_null
+      
+      - name: created_at
+        description: "Timestamp when record was created"
