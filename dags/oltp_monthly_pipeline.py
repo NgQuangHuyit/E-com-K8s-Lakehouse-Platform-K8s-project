@@ -216,8 +216,8 @@ with DAG(
     done_ingest = DummyOperator(task_id='done_ingestion')
     
     spark_partition_update = JdbcOperator(
-                                task_id="spark_thrift_jdbc",
-                                jdbc_conn_id="update_spark_partition",
+                                task_id="update_spark_partition",
+                                conn_id="spark_thrift_jdbc",
                                 sql="MSCK repair table bronze.orders;" \
                                 "MSCK repair table bronze.order_items;" 
                             )
