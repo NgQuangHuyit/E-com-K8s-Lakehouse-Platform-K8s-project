@@ -171,7 +171,7 @@ with DAG(
         for model_name, model_info in silver_models.items():
             task = BashOperator(
                 task_id=f"run_{model_name}",
-                bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name}"
+                bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name} "
                             f"--vars '{{\"etl_date\": \"{{{{ ds }}}}\", "
                             f"\"etl_year\": \"{{{{ execution_date.strftime('%Y') }}}}\", "
                             f"\"etl_month\": \"{{{{ execution_date.strftime('%m') }}}}\"}}'",
@@ -198,7 +198,7 @@ with DAG(
         for model_name, model_info in gold_models.items():
             task = BashOperator(
                 task_id=f"run_{model_name}",
-                bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name}"
+                bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name} "
                             f"--vars '{{\"etl_date\": \"{{{{ ds }}}}\", "
                             f"\"etl_year\": \"{{{{ execution_date.strftime('%Y') }}}}\", "
                             f"\"etl_month\": \"{{{{ execution_date.strftime('%m') }}}}\"}}'",
