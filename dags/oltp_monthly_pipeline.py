@@ -219,7 +219,11 @@ with DAG(
                                 task_id="update_spark_partition",
                                 jdbc_conn_id="spark_thrift_default",
                                 sql="MSCK repair table bronze.orders;" \
-                                "MSCK repair table bronze.order_items;" 
+                                "MSCK repair table bronze.order_items;",
+                                hook_params={
+                                    "driver_class": "org.apache.hive.jdbc.HiveDriver",
+                                    "driver_path": "/opt/airflow/jars/hive-jdbc-3.1.3-standalone.jar"
+                                }
                             )
     start_ingest >> [transactional_group, snapshots_group] >> done_ingest >> spark_partition_update
 
