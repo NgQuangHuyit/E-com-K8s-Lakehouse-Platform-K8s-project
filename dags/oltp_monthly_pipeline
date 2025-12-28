@@ -73,7 +73,7 @@ default_args = {
 }
 
 with DAG(
-    dag_id='oltp_monthly_pipeline',
+    dag_id='oltp_monthly_pipeline_2',
     start_date=datetime(2025, 11, 15),
     schedule_interval=None,   
     default_args=default_args,
