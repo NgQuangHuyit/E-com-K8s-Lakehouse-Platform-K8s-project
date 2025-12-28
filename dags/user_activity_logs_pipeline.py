@@ -151,7 +151,8 @@ with DAG(
     # Compile DBT to generate manifest
     dbt_compile = BashOperator(
         task_id="dbt_compile",
-        bash_command=f"cd {DBT_PROJECT_DIR} && dbt compile",
+        bash_command=f"cd {DBT_PROJECT_DIR} && dbt compile"
+                     f" --vars '{{\"etl_date\": \"{{{{ ds }}}}\" '",
         env={
             "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
             **os.environ
