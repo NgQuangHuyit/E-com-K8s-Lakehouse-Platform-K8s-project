@@ -3,6 +3,7 @@
         materialized='table',
         unique_key='action_id',
         file_format='delta',
+        schema='silver',
         partition_by=['year', 'month', 'day']
     )
 }}

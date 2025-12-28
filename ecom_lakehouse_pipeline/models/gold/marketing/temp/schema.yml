@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: temp_latest_predictions
+    description: >
+      Temp parquet table - Latest prediction cho mỗi customer với ROW_NUMBER.
+      Cache để tránh OOM khi query ml schema.
+    columns:
+      - name: customer_id
+        description: "Customer ID"
+      - name: prediction_date
+        description: "Ngày dự đoán"
+      - name: purchase_probability
+        description: "Xác suất mua"
+      - name: predicted_at
+        description: "Timestamp prediction"
+      - name: rn
+        description: "Row number để lấy latest"
+
+  - name: temp_top_customers
+    description: >
+      Temp parquet table - Top customers filtered (rn=1, probability>=50%).
+      Input cho marketing campaign model.
+    columns:
+      - name: customer_id
+        description: "Customer ID"
+      - name: campaign_date
+        description: "Ngày campaign"
+      - name: purchase_probability
+        description: "Xác suất mua"
+      - name: predicted_at
+        description: "Timestamp prediction"
