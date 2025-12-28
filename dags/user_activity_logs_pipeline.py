@@ -79,7 +79,7 @@ def get_sftp_files_to_transfer(sftp_conn_id, sftp_remote_path,s3_remote_path, **
         file_list = []
     if not file_list:
         logging.info(f"No files found in {sftp_remote_path}. Skipping transfer.")
-        return []  # Empty list → dynamic task mapping sẽ tạo 0 task
+        return [] 
 
     source_target_pairs = [
         {
@@ -158,7 +158,8 @@ with DAG(
         for model_name, model_info in silver_models.items():
             task = BashOperator(
                 task_id=f"run_{model_name}",
-                bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name}",
+                bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name}"
+                            f" --vars '{{\"etl_date\": \"{{{{ ds }}}}\" ",
                 env={
                     "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
                     **os.environ
@@ -182,7 +183,8 @@ with DAG(
         for model_name, model_info in gold_models.items():
             task = BashOperator(
                 task_id=f"run_{model_name}",
-                bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name}",
+                bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name}"
+                            f" --vars '{{\"etl_date\": \"{{{{ ds }}}}\" '",
                 env={
                     "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
                     **os.environ
