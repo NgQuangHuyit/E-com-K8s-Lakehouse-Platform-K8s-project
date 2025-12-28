@@ -7,6 +7,7 @@ from airflow.operators.bash import BashOperator
 from airflow.utils.task_group import TaskGroup
 
 from airflow.providers.jdbc.operators.jdbc import JdbcOperator
+
 import logging
 import os
 import json
@@ -87,7 +88,11 @@ with DAG(
             task_id='transfer_orders',
             sql_conn_id=MYSQL_CONN_ID,
             aws_conn_id=S3_CONN_ID,
-            query="SELECT * FROM orders;",
+            query="""
+                SELECT *
+                FROM orders
+                WHERE DATE_FORMAT(order_date, '%Y-%m') = '{{ ds[:7] }}'
+                """,
             s3_bucket=S3_BUCKET,
             s3_key="bronze/orders/year={{ ds[:4] }}/month={{ ds[5:7] }}/orders_{{ ds[:4] }}{{ ds[5:7] }}01.csv",
             replace=True,
@@ -103,7 +108,16 @@ with DAG(
             task_id='transfer_order_items',
             sql_conn_id=MYSQL_CONN_ID,
             aws_conn_id=S3_CONN_ID,
-            query="SELECT * FROM order_items;",
+            query="""
+                WITH monthly_orders AS (
+                    SELECT order_id
+                    FROM orders
+                    WHERE DATE_FORMAT(order_date, '%Y-%m') = '{{ ds[:7] }}'
+                )
+                SELECT oi.*
+                FROM order_items oi
+                JOIN monthly_orders mo ON oi.order_id = mo.order_id
+                """,
             s3_bucket=S3_BUCKET,
             s3_key="bronze/order-items/year={{ ds[:4] }}/month={{ ds[5:7] }}/order_items_{{ ds[:4] }}{{ ds[5:7] }}01.csv",
             replace=True,
