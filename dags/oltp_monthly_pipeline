@@ -5,6 +5,8 @@ from airflow.utils.dates import days_ago
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.bash import BashOperator
 from airflow.utils.task_group import TaskGroup
+
+from airflow.providers.jdbc.operators.jdbc import JdbcOperator
 import logging
 import os
 import json
