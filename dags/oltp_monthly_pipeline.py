@@ -240,85 +240,85 @@ with DAG(
     start_ingest >> [transactional_group, snapshots_group] >> done_ingest >> spark_partition_update
 
 
-    # # Compile DBT to generate manifest
-    # dbt_compile = BashOperator(
-    #     task_id="dbt_compile",
-    #     bash_command=f"cd {DBT_PROJECT_DIR} && dbt compile",
-    #     env={
-    #         "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
-    #         **os.environ
-    #     },
-    #     append_env=True
-    # )
+    # Compile DBT to generate manifest
+    dbt_compile = BashOperator(
+        task_id="dbt_compile",
+        bash_command=f"cd {DBT_PROJECT_DIR} && dbt compile",
+        env={
+            "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
+            **os.environ
+        },
+        append_env=True
+    )
 
-    # # Task Group: Silver OLTP layer with auto-generated tasks per model
-    # with TaskGroup(group_id="silver_oltp") as silver_group:
-    #     silver_models = parse_dbt_manifest("silver/oltp")
-    #     silver_tasks = {}
+    # Task Group: Silver OLTP layer with auto-generated tasks per model
+    with TaskGroup(group_id="silver_oltp") as silver_group:
+        silver_models = parse_dbt_manifest("silver/oltp")
+        silver_tasks = {}
         
-    #     # Create task for each silver model
-    #     for model_name, model_info in silver_models.items():
-    #         task = BashOperator(
-    #             task_id=f"run_{model_name}",
-    #             bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name}",
-    #             env={
-    #                 "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
-    #                 **os.environ
-    #             },
-    #             append_env=True
-    #         )
-    #         silver_tasks[model_name] = task
+        # Create task for each silver model
+        for model_name, model_info in silver_models.items():
+            task = BashOperator(
+                task_id=f"run_{model_name}",
+                bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name} --vars '{{\"etl_year\": \"{execution_date.strftime("%Y")}\", \"etl_month\": \"{execution_date.strftime("%m")}\"}}'",
+                env={
+                    "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
+                    **os.environ
+                },
+                append_env=True
+            )
+            silver_tasks[model_name] = task
         
-    #     # Set dependencies based on DBT lineage
-    #     for model_name, model_info in silver_models.items():
-    #         for upstream_model in model_info['upstream']:
-    #             if upstream_model in silver_tasks:
-    #                 silver_tasks[upstream_model] >> silver_tasks[model_name]
+        # Set dependencies based on DBT lineage
+        for model_name, model_info in silver_models.items():
+            for upstream_model in model_info['upstream']:
+                if upstream_model in silver_tasks:
+                    silver_tasks[upstream_model] >> silver_tasks[model_name]
 
-    # # Task Group: Gold sale_mart layer with auto-generated tasks
-    # with TaskGroup(group_id="gold_sale_mart") as gold_group:
-    #     gold_models = parse_dbt_manifest("gold/sale_mart")
-    #     gold_tasks = {}
+    # Task Group: Gold sale_mart layer with auto-generated tasks
+    with TaskGroup(group_id="gold_sale_mart") as gold_group:
+        gold_models = parse_dbt_manifest("gold/sale_mart")
+        gold_tasks = {}
         
-    #     # Create task for each gold model
-    #     for model_name, model_info in gold_models.items():
-    #         task = BashOperator(
-    #             task_id=f"run_{model_name}",
-    #             bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name}",
-    #             env={
-    #                 "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
-    #                 **os.environ
-    #             },
-    #             append_env=True
-    #         )
-    #         gold_tasks[model_name] = task
+        # Create task for each gold model
+        for model_name, model_info in gold_models.items():
+            task = BashOperator(
+                task_id=f"run_{model_name}",
+                bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name} --vars '{{\"etl_year\": \"{execution_date.strftime("%Y")}\", \"etl_month\": \"{execution_date.strftime("%m")}\"}}'",
+                env={
+                    "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
+                    **os.environ
+                },
+                append_env=True
+            )
+            gold_tasks[model_name] = task
         
-    #     # Set dependencies within gold layer
-    #     for model_name, model_info in gold_models.items():
-    #         for upstream_model in model_info['upstream']:
-    #             if upstream_model in gold_tasks:
-    #                 gold_tasks[upstream_model] >> gold_tasks[model_name]
+        # Set dependencies within gold layer
+        for model_name, model_info in gold_models.items():
+            for upstream_model in model_info['upstream']:
+                if upstream_model in gold_tasks:
+                    gold_tasks[upstream_model] >> gold_tasks[model_name]
 
-    # # DBT test tasks
-    # dbt_test_silver = BashOperator(
-    #     task_id="dbt_test_silver",
-    #     bash_command=f"cd {DBT_PROJECT_DIR} && dbt test --select orders orders_items customers products categories brands payment_method",
-    #     env={
-    #         "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
-    #         **os.environ
-    #     },
-    #     append_env=True
-    # )
+    # DBT test tasks
+    dbt_test_silver = BashOperator(
+        task_id="dbt_test_silver",
+        bash_command=f"cd {DBT_PROJECT_DIR} && dbt test --select orders orders_items customers products categories brands payment_method",
+        env={
+            "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
+            **os.environ
+        },
+        append_env=True
+    )
 
-    # dbt_test_gold = BashOperator(
-    #     task_id="dbt_test_gold",
-    #     bash_command=f"cd {DBT_PROJECT_DIR} && dbt test --select fact_orders dim_date dim_customers dim_payment_methods",
-    #     env={
-    #         "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
-    #         **os.environ
-    #     },
-    #     append_env=True
-    # )
+    dbt_test_gold = BashOperator(
+        task_id="dbt_test_gold",
+        bash_command=f"cd {DBT_PROJECT_DIR} && dbt test --select fact_orders dim_date dim_customers dim_payment_methods",
+        env={
+            "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
+            **os.environ
+        },
+        append_env=True
+    )
 
-    # # Task dependencies across layers
-    # done_ingest >> dbt_compile >> silver_group >> dbt_test_silver >> gold_group >> dbt_test_gold
+    # Task dependencies across layers
+    spark_partition_update >> dbt_compile >> silver_group >> dbt_test_silver >> gold_group >> dbt_test_gold
