@@ -244,8 +244,9 @@ with DAG(
     dbt_compile = BashOperator(
         task_id="dbt_compile",
         bash_command=f"cd {DBT_PROJECT_DIR} && dbt compile"
-                    f" --vars '{{\"etl_year\": \"{{{{ execution_date.strftime('%Y') }}}}\", "
-                    f"\"etl_month\": \"{{{{ execution_date.strftime('%m') }}}}\"}}'",
+                    f" --vars '{{\"etl_date\": \"{{{{ ds }}}}\", "
+                            f"\"etl_year\": \"{{{{ execution_date.strftime('%Y') }}}}\", "
+                            f"\"etl_month\": \"{{{{ execution_date.strftime('%m') }}}}\"}}'",
         env={
             "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
             **os.environ
@@ -264,7 +265,8 @@ with DAG(
                 task_id=f"run_{model_name}",
                 bash_command=f"cd {DBT_PROJECT_DIR} && "
                             f"dbt run --select {model_name} "
-                            f"--vars '{{\"etl_year\": \"{{{{ execution_date.strftime('%Y') }}}}\", "
+                            f"--vars '{{\"etl_date\": \"{{{{ ds }}}}\", "
+                            f"\"etl_year\": \"{{{{ execution_date.strftime('%Y') }}}}\", "
                             f"\"etl_month\": \"{{{{ execution_date.strftime('%m') }}}}\"}}'",
                 env={
                     "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
@@ -291,7 +293,8 @@ with DAG(
                 task_id=f"run_{model_name}",
                 bash_command=f"cd {DBT_PROJECT_DIR} && "
                             f"dbt run --select {model_name} "
-                            f"--vars '{{\"etl_year\": \"{{{{ execution_date.strftime('%Y') }}}}\", "
+                            f"--vars '{{\"etl_date\": \"{{{{ ds }}}}\", "
+                            f"\"etl_year\": \"{{{{ execution_date.strftime('%Y') }}}}\", "
                             f"\"etl_month\": \"{{{{ execution_date.strftime('%m') }}}}\"}}'",
                 env={
                     "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
