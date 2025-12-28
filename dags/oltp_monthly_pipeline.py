@@ -260,7 +260,10 @@ with DAG(
         for model_name, model_info in silver_models.items():
             task = BashOperator(
                 task_id=f"run_{model_name}",
-                bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name} --vars '{{\"etl_year\": \"{execution_date.strftime("%Y")}\", \"etl_month\": \"{execution_date.strftime("%m")}\"}}'",
+                bash_command=f"cd {DBT_PROJECT_DIR} && "
+                            f"dbt run --select {model_name} "
+                            f"--vars '{{\"etl_year\": \"{{{{ execution_date.strftime('%Y') }}}}\", "
+                            f"\"etl_month\": \"{{{{ execution_date.strftime('%m') }}}}\"}}'",
                 env={
                     "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
                     **os.environ
@@ -284,7 +287,10 @@ with DAG(
         for model_name, model_info in gold_models.items():
             task = BashOperator(
                 task_id=f"run_{model_name}",
-                bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name} --vars '{{\"etl_year\": \"{execution_date.strftime("%Y")}\", \"etl_month\": \"{execution_date.strftime("%m")}\"}}'",
+                bash_command=f"cd {DBT_PROJECT_DIR} && "
+                            f"dbt run --select {model_name} "
+                            f"--vars '{{\"etl_year\": \"{{{{ execution_date.strftime('%Y') }}}}\", "
+                            f"\"etl_month\": \"{{{{ execution_date.strftime('%m') }}}}\"}}'",
                 env={
                     "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
                     **os.environ
