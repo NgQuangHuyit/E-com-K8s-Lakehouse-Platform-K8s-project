@@ -31,20 +31,18 @@ with DAG(
     train_model_task = BashOperator(
         task_id="train_purchase_prediction_model",
         bash_command="""
-            spark-submit \
+                spark-submit \
                 --deploy-mode client \
                 --conf spark.dynamicAllocation.enabled=true \
                 --conf spark.kubernetes.container.image=ngquanghuyit/spark-delta-lake:3.3 \
-                --conf spark.kubernetes.driver.pod.name=spark-thrift-server-0 \
                 --conf spark.kubernetes.executor.request.cores=500m \
                 --conf spark.executor.instances=2 \
-                --conf spark.dynamicAllocation.maxExecutors=4 \
+                --conf spark.dynamicAllocation.maxExecutors=3 \
                 --conf spark.kubernetes.namespace=lakehouse \
-                --conf spark.driver.host=spark-thrift-service \
-                --conf spark.driver.bindAddress=spark-thrift-server-0 \
+                --conf spark.driver.host=airflow-scheduler.lakehouse.svc.cluster.local \
                 --conf spark.driver.port=7078 \
+                --conf spark.driver.bindAddress=0.0.0.0 \
                 --conf spark.dynamicAllocation.shuffleTracking.enabled=true \
-                --conf spark.sql.adaptive.enabled=true \
                 --conf spark.driver.memory=1400m \
                 --conf spark.executor.memory=1400m \
                 /opt/airflow/dags/repo/dags/sparkjobs/train_model.py
