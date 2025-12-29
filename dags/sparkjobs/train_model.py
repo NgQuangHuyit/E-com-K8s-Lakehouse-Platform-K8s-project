@@ -28,7 +28,7 @@ def get_spark(app_name: str):
 
 if __name__ == "__main__":
     spark = get_spark("train_next_day_purchase_model")
-    df = spark.read.format("delta").table("ml.user_behavior_3d_agg_feature").filter(col("prediction_date") < to_date('2025-12-11'))
+    df = spark.read.format("delta").table("ml.user_behavior_3d_agg_feature").filter(col("prediction_date") < to_date(lit('2025-12-11')))
     # Đặc trưng về hành vi mua hàng (quan trọng nhất)
     purchase_behavior_features = [
         'purchase_count_3d',              # #1 - Số lần mua trong 3 ngày
