@@ -148,6 +148,38 @@ with DAG(
                                         "driver_path": "/opt/airflow/jars/hive-jdbc-3.1.3-standalone.jar"
                                     }
                                 )
+    with TaskGroup(group_id="drop_tmp_tables") as drop_tmp_tables_group:
+        spark_drop_actions_daily_tmp_tbl = JdbcOperator(
+                                        task_id="drop_actions_daily_tmp_tbl",
+                                        jdbc_conn_id="spark_thrift_default",
+                                        sql="DROP TABLE IF EXISTS default.actions_daily_tmp;",
+                                        hook_params={
+                                            "driver_class": "org.apache.hive.jdbc.HiveDriver",
+                                            "driver_path": "/opt/airflow/jars/hive-jdbc-3.1.3-standalone.jar"
+                                        }
+                                    )
+        
+        spark_drop_sessions_daily_tmp_tbl = JdbcOperator(
+                                        task_id="drop_sessions_daily_tmp_tbl",
+                                        jdbc_conn_id="spark_thrift_default",
+                                        sql="DROP TABLE IF EXISTS default.sessions_daily_tmp;",
+                                        hook_params={
+                                            "driver_class": "org.apache.hive.jdbc.HiveDriver",
+                                            "driver_path": "/opt/airflow/jars/hive-jdbc-3.1.3-standalone.jar"
+                                        }
+                                    )
+        spark_drop_user_daily_metric_tmp_tbl = JdbcOperator(
+                                        task_id="drop_user_daily_metric_tmp_tbl",
+                                        jdbc_conn_id="spark_thrift_default",
+                                        sql="DROP TABLE IF EXISTS default.user_daily_metric_tmp;",
+                                        hook_params={
+                                            "driver_class": "org.apache.hive.jdbc.HiveDriver",
+                                            "driver_path": "/opt/airflow/jars/hive-jdbc-3.1.3-standalone.jar"
+                                        }
+                                    )
+        
+
+        
     # Compile DBT to generate manifest
     dbt_compile = BashOperator(
         task_id="dbt_compile",
@@ -238,4 +270,4 @@ with DAG(
     )
 
     # Task dependencies across layers
-    list_sftp_files_task >> transfer_file_to_s3 >> spark_partition_update_user_activity_logs >> dbt_compile >> silver_group >> dbt_test_silver >> gold_group >> dbt_test_gold
+    list_sftp_files_task >> transfer_file_to_s3 >> spark_partition_update_user_activity_logs >> dbt_compile >> silver_group >> dbt_test_silver >> drop_tmp_tables_group >> gold_group >> dbt_test_gold
