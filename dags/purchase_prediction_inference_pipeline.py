@@ -74,8 +74,9 @@ default_args = {
 
 with DAG(
     dag_id="marketing_campain_datapipeline_with_inference_lr_model",
-    start_date=datetime(2025, 1, 1),
-    schedule_interval=None,  
+    start_date=datetime(2025, 12, 18),
+    end_date=datetime(2025, 12, 19),
+    schedule_interval="@daily",  
     default_args=default_args,
     catchup=False,
     max_active_runs=1,
@@ -83,12 +84,32 @@ with DAG(
 ) as dag:
 
     # Spark ML Inference Job
-    spark_inference_job = SparkKubernetesOperator(
+    # spark_inference_job = SparkKubernetesOperator(
+    #     task_id="spark_ml_inference",
+    #     namespace=SPARK_NAMESPACE,
+    #     application_file="spark_ml_inference_job.yaml",  # We'll create this
+    #     kubernetes_conn_id="kubernetes_default",
+    #     do_xcom_push=True,
+    # )
+
+    spark_submit_task = BashOperator(
         task_id="spark_ml_inference",
-        namespace=SPARK_NAMESPACE,
-        application_file="spark_ml_inference_job.yaml",  # We'll create this
-        kubernetes_conn_id="kubernetes_default",
-        do_xcom_push=True,
+        bash_command=f"""
+            spark-submit \
+            --deploy-mode client \
+            --conf spark.dynamicAllocation.enabled=true 
+            --conf spark.kubernetes.container.image=ngquanghuyit/spark-delta-lake:3.3
+            --conf spark.kubernetes.driver.pod.name=spark-thrift-server-0
+            --conf spark.kubernetes.executor.request.cores="500m" 
+            --conf spark.kubernetes.executor.numExecutors=2 
+            --conf spark.dynamicAllocation.maxExecutors=3 
+            --conf spark.kubernetes.namespace=lakehouse 
+            --conf spark.driver.host=spark-thrift-service 
+            --conf spark.driver.bindAddress=spark-thrift-server-0 
+            --conf spark.driver.port=7078 
+            --conf spark.dynamicAllocation.shuffleTracking.enabled=true \
+            /opt/airflow/dags/repo/dags/sparkjobs/logistic_regression_inference.py --execution-date {{ ds }}
+        """,
     )
 
     # Alternative: Using BashOperator with spark-submit if SparkKubernetesOperator not available
@@ -166,4 +187,4 @@ with DAG(
     )
 
     # Task dependencies
-    spark_inference_job >> dbt_compile >> marketing_group >> dbt_test_marketing
+    spark_submit_task >> dbt_compile >> marketing_group >> dbt_test_marketing
