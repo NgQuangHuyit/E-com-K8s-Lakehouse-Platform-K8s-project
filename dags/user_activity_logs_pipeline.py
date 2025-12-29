@@ -270,4 +270,4 @@ with DAG(
     )
 
     # Task dependencies across layers
-    list_sftp_files_task >> transfer_file_to_s3 >> spark_partition_update_user_activity_logs >> dbt_compile >> silver_group >> dbt_test_silver >> drop_tmp_tables_group >> gold_group >> dbt_test_gold
+    list_sftp_files_task >> transfer_file_to_s3 >> spark_partition_update_user_activity_logs >> dbt_compile >> silver_group >> dbt_test_silver >> drop_tmp_tables_group >> gold_group >> dbt_test_gold >> drop_tmp_tables_group
