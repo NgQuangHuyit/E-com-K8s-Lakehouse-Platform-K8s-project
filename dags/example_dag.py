@@ -14,13 +14,12 @@ default_args = {
 
 # Định nghĩa DAG
 with DAG(
-    dag_id='example_hello_world',
+    dag_id='train_model_pipeline',
     default_args=default_args,
-    description='A simple example DAG',
-    schedule_interval='*/5 * * * *',  # Chạy mỗi 5 phút
+    schedule_interval=None,  # Manual trigger only
     start_date=datetime(2025, 10, 1),
     catchup=False,
-    tags=['example'],
+    tags=['ml', 'training', 'model', 'manual'],
 ) as dag:
 
     task1 = BashOperator(
@@ -28,15 +27,30 @@ with DAG(
         bash_command='echo "Hello from Airflow DAG!"'
     )
 
-    task2 = BashOperator(
-        task_id='print_time',
-        bash_command='date'
+    # Task 2: Train model with PySpark
+    train_model_task = BashOperator(
+        task_id="train_purchase_prediction_model",
+        bash_command="""
+            spark-submit \
+                --deploy-mode client \
+                --conf spark.dynamicAllocation.enabled=true \
+                --conf spark.kubernetes.container.image=ngquanghuyit/spark-delta-lake:3.3 \
+                --conf spark.kubernetes.driver.pod.name=spark-thrift-server-0 \
+                --conf spark.kubernetes.executor.request.cores=500m \
+                --conf spark.executor.instances=2 \
+                --conf spark.dynamicAllocation.maxExecutors=4 \
+                --conf spark.kubernetes.namespace=lakehouse \
+                --conf spark.driver.host=spark-thrift-service \
+                --conf spark.driver.bindAddress=spark-thrift-server-0 \
+                --conf spark.driver.port=7078 \
+                --conf spark.dynamicAllocation.shuffleTracking.enabled=true \
+                --conf spark.sql.adaptive.enabled=true \
+                --conf spark.driver.memory=1400m \
+                --conf spark.executor.memory=1400m \
+                /opt/airflow/dags/repo/dags/sparkjobs/train_model.py
+        """,
     )
 
-    task3 = BashOperator(
-        task_id='print_goodbye',
-        bash_command='echo "Goodbye from Airflow DAG!"'
-    )
 
     # Define thứ tự chạy
-    task1 >> task2 >> task3
+    task1 >> train_model_task
