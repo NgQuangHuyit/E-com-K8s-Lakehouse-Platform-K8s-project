@@ -94,14 +94,7 @@ def get_sftp_files_to_transfer(sftp_conn_id, sftp_remote_path,s3_remote_path, **
     logger.info(f"Files to transfer: {source_target_pairs}")
 
     return source_target_pairs  
-    # source_files = list(map(lambda file_name: f"{sftp_remote_path}{file_name}", file_list))
-    # logger.info(f"Files found: {source_files}")
-    # target_file_s3_key = list(map(lambda file_name: f"{REMOTE_S3_PATH}{file_name}", file_list))
-    # logger.info(f"Target S3 keys: {target_file_s3_key}")
-    # return {
-    #     "source_files": source_files,
-    #     "target_file_s3_key": target_file_s3_key
-    # }
+
 
 
 default_args = {
@@ -112,7 +105,8 @@ default_args = {
 
 with DAG(
     dag_id="user_activity_logs_data_pipeline",
-    start_date=datetime(2025, 12, 15),
+    start_date=datetime(2025, 12, 9),
+    end_date=datetime(2025, 12, 18),
     schedule_interval='@daily',  
     default_args=default_args,
     catchup=True,     
