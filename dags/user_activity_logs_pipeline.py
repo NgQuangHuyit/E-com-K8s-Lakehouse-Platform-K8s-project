@@ -204,7 +204,7 @@ with DAG(
             task = BashOperator(
                 task_id=f"run_{model_name}",
                 bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name} "
-                            f"--vars '{{\"etl_date\": \"{{{{ ds }}}}\", "
+                            f" --vars '{{\"etl_date\": \"{{{{ ds }}}}\", "
                             f"\"etl_year\": \"{{{{ execution_date.strftime('%Y') }}}}\", "
                             f"\"etl_month\": \"{{{{ execution_date.strftime('%m') }}}}\"}}'",
                 env={
@@ -231,7 +231,7 @@ with DAG(
             task = BashOperator(
                 task_id=f"run_{model_name}",
                 bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name} "
-                            f"--vars '{{\"etl_date\": \"{{{{ ds }}}}\", "
+                            f" --vars '{{\"etl_date\": \"{{{{ ds }}}}\", "
                             f"\"etl_year\": \"{{{{ execution_date.strftime('%Y') }}}}\", "
                             f"\"etl_month\": \"{{{{ execution_date.strftime('%m') }}}}\"}}'",
                 env={
