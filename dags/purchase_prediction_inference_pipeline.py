@@ -74,11 +74,11 @@ default_args = {
 
 with DAG(
     dag_id="marketing_campain_datapipeline_with_inference_lr_model",
-    start_date=datetime(2025, 12, 18),
-    end_date=datetime(2025, 12, 19),
+    start_date=datetime(2025, 12, 17),
+    end_date=datetime(2025, 12, 20),
     schedule_interval="@daily",  
     default_args=default_args,
-    catchup=False,
+    catchup=True,
     max_active_runs=1,
     tags=["ml", "inference", "marketing"]
 ) as dag:
