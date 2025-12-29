@@ -104,7 +104,6 @@ with DAG(
                 --conf spark.dynamicAllocation.maxExecutors=3 \
                 --conf spark.kubernetes.namespace=lakehouse \
                 --conf spark.dynamicAllocation.shuffleTracking.enabled=true \
-                --jars /home/airflow/spark/jars/* \
                 /opt/airflow/dags/repo/dags/sparkjobs/logistic_regression_inference.py --execution-date {{ ds }}
         """,
     )
