@@ -103,6 +103,9 @@ with DAG(
                 --conf spark.executor.instances=2 \
                 --conf spark.dynamicAllocation.maxExecutors=3 \
                 --conf spark.kubernetes.namespace=lakehouse \
+                --conf spark.driver.host=airflow-scheduler.lakehouse.svc.cluster.local \
+                --conf spark.driver.port=7078 \
+                --conf spark.driver.bindAddress=0.0.0.0 \
                 --conf spark.dynamicAllocation.shuffleTracking.enabled=true \
                 /opt/airflow/dags/repo/dags/sparkjobs/logistic_regression_inference.py --execution-date {{ ds }}
         """,
