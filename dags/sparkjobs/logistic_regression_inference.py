@@ -75,7 +75,7 @@ if __name__ == "__main__":
     # ===============================
     # 3. Load trained model
     # ===============================
-    model_path = "s3a://lakehouse/models/next_day_purchase_prediction_lr_v2"
+    model_path = "s3a://lakehouse/models/next_day_purchase_prediction_lr_v3"
 
     model: PipelineModel = PipelineModel.load(model_path)
 
