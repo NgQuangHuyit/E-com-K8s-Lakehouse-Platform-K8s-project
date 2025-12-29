@@ -99,14 +99,10 @@ with DAG(
                 --deploy-mode client \
                 --conf spark.dynamicAllocation.enabled=true \
                 --conf spark.kubernetes.container.image=ngquanghuyit/spark-delta-lake:3.3 \
-                --conf spark.kubernetes.driver.pod.name=spark-thrift-server-0 \
                 --conf spark.kubernetes.executor.request.cores=500m \
                 --conf spark.executor.instances=2 \
                 --conf spark.dynamicAllocation.maxExecutors=3 \
                 --conf spark.kubernetes.namespace=lakehouse \
-                --conf spark.driver.host=spark-thrift-service \
-                --conf spark.driver.bindAddress=spark-thrift-server-0 \
-                --conf spark.driver.port=7078 \
                 --conf spark.dynamicAllocation.shuffleTracking.enabled=true \
                 /opt/airflow/dags/repo/dags/sparkjobs/logistic_regression_inference.py --execution-date {{ ds }}
         """,
