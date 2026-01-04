@@ -142,7 +142,10 @@ with DAG(
     # Compile DBT to generate manifest
     dbt_compile = BashOperator(
         task_id="dbt_compile",
-        bash_command=f"cd {DBT_PROJECT_DIR} && dbt compile",
+        bash_command=f"cd {DBT_PROJECT_DIR} && dbt compile"
+                    f" --vars '{{\"etl_date\": \"{{{{ ds }}}}\", "
+                            f"\"etl_year\": \"{{{{ execution_date.strftime('%Y') }}}}\", "
+                            f"\"etl_month\": \"{{{{ execution_date.strftime('%m') }}}}\"}}'",
         env={
             "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
             **os.environ
@@ -159,7 +162,10 @@ with DAG(
         for model_name, model_info in marketing_models.items():
             task = BashOperator(
                 task_id=f"run_{model_name}",
-                bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name}",
+                bash_command=f"cd {DBT_PROJECT_DIR} && dbt run --select {model_name}"
+                            f" --vars '{{\"etl_date\": \"{{{{ ds }}}}\", "
+                            f"\"etl_year\": \"{{{{ execution_date.strftime('%Y') }}}}\", "
+                            f"\"etl_month\": \"{{{{ execution_date.strftime('%m') }}}}\"}}'",
                 env={
                     "DBT_PROFILES_DIR": DBT_PROJECT_DIR,
                     **os.environ
