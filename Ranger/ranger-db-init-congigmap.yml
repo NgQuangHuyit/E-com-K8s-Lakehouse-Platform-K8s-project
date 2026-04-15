@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ranger-db-init-script
+  namespace: lakehouse
+data:
+  init_postgres.sh: |
+    #!/bin/bash
+    set -e
+
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+        CREATE USER rangeradmin WITH PASSWORD 'rangerR0cks!';
+        CREATE DATABASE ranger;
+        GRANT ALL PRIVILEGES ON DATABASE ranger TO rangeradmin;
+
+        CREATE USER hive WITH PASSWORD 'rangerR0cks!';
+        CREATE DATABASE hive;
+        GRANT ALL PRIVILEGES ON DATABASE hive TO hive;
+
+        CREATE ROLE root WITH SUPERUSER LOGIN PASSWORD 'rangerR0cks!';
+        CREATE DATABASE root OWNER root;
+    EOSQL
+
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ranger-pvc
+  namespace: lakehouse
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: "do-block-storage"
+  resources:
+    requests:
+      storage: 3Gi

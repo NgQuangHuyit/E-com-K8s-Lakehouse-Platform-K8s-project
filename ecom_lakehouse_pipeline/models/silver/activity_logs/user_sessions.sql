@@ -1,9 +1,10 @@
 {{
     config(
-        materialized='table',
+        materialized='incremental',
         unique_key='session_id',
         file_format='delta',
         schema='silver',
+        incremental_strategy='merge',
         partition_by=['year', 'month', 'day']
     )
 }}
@@ -16,14 +17,7 @@ with raw_events as (
         session_id,
         user_id,
         to_timestamp(timestamp) as timestamp,
-        -- date(to_timestamp(timestamp)) as session_date,
-        -- hour(to_timestamp(timestamp)) as hour_of_day,
-        -- case 
-        --     when dayofweek(to_timestamp(timestamp)) in (1, 7) then true  -- Sunday=1, Saturday=7
-        --     else false 
-        -- end as is_weekend,
-        
-        -- Device info
+
         device.type as device_type,
         device.os as device_os,
         device.browser as browser,
@@ -40,7 +34,7 @@ with raw_events as (
         CAST(session_metrics.actions_count as INT) as actions_count,
         CAST(session_metrics.has_purchase as BOOLEAN) as has_purchase,
         CAST(session_metrics.revenue as FLOAT) as revenue,
-        
+    
         -- User segment
         user_segment,
         
@@ -60,6 +54,9 @@ with raw_events as (
         day(ingest_date) as day
         
     from {{ source('bronze', 'user_activity_logs') }}
+    {% if is_incremental() %}
+    where ingest_date = '{{ var('etl_date') }}'
+    {% endif %}
     
 
 )

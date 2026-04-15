@@ -1,107 +1,115 @@
 {{
     config(
-        materialized='incremental',
+        materialized='table',
         file_format='delta',
         schema='ml',
-        unique_key=['user_id', 'prediction_date'],
-        incremental_strategy='merge'
+        unique_key=['user_id', 'prediction_date']
     )
 }}
 
 
 
-WITH daily_metrics AS (
-    SELECT
-        *
-    FROM {{ref('user_daily_metric_tmp')}} s
-    
-),
-
--- Single window pass for all metrics - memory efficient
-rolling_features AS (
+WITH base AS (
     SELECT
         user_id,
         activity_date,
         has_purchase_today,
-        LEAD(has_purchase_today, 1) OVER w AS label_purchase_tomorrow,
-        
-        -- All window functions in one pass (T-3 to T-1)
-        SUM(sessions_count) OVER w3 AS sessions_3d,
-        SUM(total_duration) OVER w3 AS total_duration_3d,
-        AVG(avg_duration) OVER w3 AS avg_session_duration_3d,
-        SUM(total_page_views) OVER w3 AS total_page_views_3d,
-        SUM(total_actions) OVER w3 AS total_actions_3d,
-        SUM(purchase_sessions_count) OVER w3 AS purchase_sessions_3d,
-        SUM(total_revenue) OVER w3 AS total_revenue_3d,
-        SUM(view_count) OVER w3 AS view_count_3d,
-        SUM(add_to_cart_count) OVER w3 AS add_to_cart_count_3d,
-        SUM(purchase_count) OVER w3 AS purchase_count_3d,
-        SUM(search_count) OVER w3 AS search_count_3d,
-        SUM(wishlist_count) OVER w3 AS wishlist_count_3d,
-        SUM(checkout_view_count) OVER w3 AS checkout_view_count_3d,
-        SUM(distinct_products_viewed) OVER w3 AS distinct_products_3d,
-        AVG(avg_product_price) OVER w3 AS avg_product_price_3d
-        
-    FROM daily_metrics
-    WINDOW 
-        w AS (PARTITION BY user_id ORDER BY activity_date),
-        w3 AS (PARTITION BY user_id ORDER BY activity_date ROWS BETWEEN 3 PRECEDING AND 1 PRECEDING)
+
+        sessions_count,
+        total_duration,
+        avg_duration,
+        total_page_views,
+        total_actions,
+        purchase_sessions_count,
+        total_revenue,
+
+        view_count,
+        add_to_cart_count,
+        purchase_count,
+        search_count,
+        wishlist_count,
+        checkout_view_count,
+        distinct_products_viewed,
+        avg_product_price
+    FROM {{ ref('user_daily_metric_tmp') }}
+),
+
+features AS (
+    SELECT
+        user_id,
+        activity_date AS prediction_date,
+        year(activity_date)  AS prediction_year,
+        month(activity_date) AS prediction_month,
+
+        /* ================= LABEL ================= */
+        CASE
+            WHEN LEAD(activity_date) OVER (PARTITION BY user_id ORDER BY activity_date)
+                 = date_add(activity_date, 1)
+            THEN LEAD(has_purchase_today) OVER (PARTITION BY user_id ORDER BY activity_date)
+            ELSE 0
+        END AS label_purchase_tomorrow,
+
+        /* ================= 3-DAY FEATURES ================= */
+        SUM(sessions_count) OVER w AS sessions_3d,
+        SUM(total_duration) OVER w AS total_duration_3d,
+
+        CASE
+            WHEN SUM(sessions_count) OVER w > 0
+            THEN SUM(total_duration) OVER w / SUM(sessions_count) OVER w
+            ELSE 0
+        END AS avg_session_duration_3d,
+
+        SUM(total_page_views) OVER w AS total_page_views_3d,
+        SUM(total_actions) OVER w AS total_actions_3d,
+        SUM(purchase_sessions_count) OVER w AS purchase_sessions_3d,
+        SUM(total_revenue) OVER w AS total_revenue_3d,
+
+        SUM(view_count) OVER w AS view_count_3d,
+        SUM(add_to_cart_count) OVER w AS add_to_cart_count_3d,
+        SUM(purchase_count) OVER w AS purchase_count_3d,
+        SUM(search_count) OVER w AS search_count_3d,
+        SUM(wishlist_count) OVER w AS wishlist_count_3d,
+        SUM(checkout_view_count) OVER w AS checkout_view_count_3d,
+        SUM(distinct_products_viewed) OVER w AS distinct_products_3d,
+
+        AVG(avg_product_price) OVER w AS avg_product_price_3d,
+
+        /* ================= DERIVED METRICS ================= */
+        CASE
+            WHEN SUM(view_count) OVER w > 0
+            THEN SUM(add_to_cart_count) OVER w / SUM(view_count) OVER w
+            ELSE 0
+        END AS cart_conversion_rate_3d,
+
+        CASE
+            WHEN SUM(add_to_cart_count) OVER w > 0
+            THEN SUM(purchase_count) OVER w / SUM(add_to_cart_count) OVER w
+            ELSE 0
+        END AS purchase_conversion_rate_3d,
+
+        CASE
+            WHEN SUM(sessions_count) OVER w > 0
+            THEN SUM(total_actions) OVER w / SUM(sessions_count) OVER w
+            ELSE 0
+        END AS actions_per_session_3d,
+
+        CASE
+            WHEN SUM(sessions_count) OVER w > 0
+            THEN SUM(purchase_sessions_count) OVER w / SUM(sessions_count) OVER w
+            ELSE 0
+        END AS purchase_session_rate_3d
+
+    FROM base
+    WINDOW w AS (
+        PARTITION BY user_id
+        ORDER BY activity_date
+        ROWS BETWEEN 3 PRECEDING AND 1 PRECEDING
+    )
 )
 
-SELECT
-    user_id,
-    activity_date AS prediction_date,
-    year(activity_date) AS prediction_year,
-    month(activity_date) AS prediction_month,
-    
-    -- LABEL
-    label_purchase_tomorrow,
-    
-    -- FEATURES: 3-day lookback metrics
-    COALESCE(sessions_3d, 0) AS sessions_3d,
-    COALESCE(total_duration_3d, 0) AS total_duration_3d,
-    COALESCE(avg_session_duration_3d, 0.0) AS avg_session_duration_3d,
-    COALESCE(total_page_views_3d, 0) AS total_page_views_3d,
-    COALESCE(total_actions_3d, 0) AS total_actions_3d,
-    COALESCE(purchase_sessions_3d, 0) AS purchase_sessions_3d,
-    COALESCE(total_revenue_3d, 0.0) AS total_revenue_3d,
-    COALESCE(view_count_3d, 0) AS view_count_3d,
-    COALESCE(add_to_cart_count_3d, 0) AS add_to_cart_count_3d,
-    COALESCE(purchase_count_3d, 0) AS purchase_count_3d,
-    COALESCE(search_count_3d, 0) AS search_count_3d,
-    COALESCE(wishlist_count_3d, 0) AS wishlist_count_3d,
-    COALESCE(checkout_view_count_3d, 0) AS checkout_view_count_3d,
-    COALESCE(distinct_products_3d, 0) AS distinct_products_3d,
-    COALESCE(avg_product_price_3d, 0.0) AS avg_product_price_3d,
-    
-    -- Derived features (conversion rates)
-    CASE 
-        WHEN COALESCE(view_count_3d, 0) > 0 
-        THEN CAST(COALESCE(add_to_cart_count_3d, 0) AS DOUBLE) / view_count_3d 
-        ELSE 0.0 
-    END AS cart_conversion_rate_3d,
-    
-    CASE 
-        WHEN COALESCE(add_to_cart_count_3d, 0) > 0 
-        THEN CAST(COALESCE(purchase_count_3d, 0) AS DOUBLE) / add_to_cart_count_3d 
-        ELSE 0.0 
-    END AS purchase_conversion_rate_3d,
-    
-    CASE 
-        WHEN COALESCE(sessions_3d, 0) > 0 
-        THEN CAST(COALESCE(total_actions_3d, 0) AS DOUBLE) / sessions_3d 
-        ELSE 0.0 
-    END AS actions_per_session_3d,
-    
-    CASE 
-        WHEN COALESCE(sessions_3d, 0) > 0 
-        THEN CAST(COALESCE(purchase_sessions_3d, 0) AS DOUBLE) / sessions_3d 
-        ELSE 0.0 
-    END AS purchase_session_rate_3d
-    
-FROM rolling_features
-WHERE 
-     sessions_3d > 0
-    {% if is_incremental() %}
-    AND activity_date > (SELECT min_date FROM date_filter)
-    {% endif %}
+SELECT *
+FROM features
+where 
+    sessions_3d IS NOT NULL 
+    and sessions_3d > 0
+

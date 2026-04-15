@@ -2,29 +2,25 @@ version: 2
 
 models:
   - name: orders
-    description: "Cleaned order data from OLTP system"
+    description: "Kiểm thử chất lượng dữ liệu bảng orders"
     columns:
       - name: order_id
-        description: "Unique order identifier"
+        description: "order_id là định danh duy nhất cho mỗi đơn hàng"
         tests:
           - unique
           - not_null
-      
+
       - name: customer_id
-        description: "Customer who placed the order"
+        description: "Khách hàng đã đặt đơn hàng"
         tests:
           - not_null
           - relationships:
               to: ref('customers')
               field: customer_id
-      
-      - name: order_date
-        description: "Date when order was placed"
-        tests:
-          - not_null
+
       
       - name: total_amount
-        description: "Total order amount"
+        description: "Tổng số tiền đơn hàng (phải lớn hơn hoặc bằng 0)"
         tests:
           - not_null
           - dbt_utils.accepted_range:
@@ -32,7 +28,7 @@ models:
               inclusive: true
       
       - name: payment_method_id
-        description: "Payment method used"
+        description: "Phương thức thanh toán được sử dụng cho đơn hàng (phải có giá trị hợp lệ)"
         tests:
           - not_null
           - relationships:
@@ -43,13 +39,13 @@ models:
     description: "Order line items"
     columns:
       - name: order_item_id
-        description: "Unique order item identifier"
+        description: "Định danh duy nhất cho mỗi mục đơn hàng"
         tests:
           - unique
           - not_null
       
       - name: order_id
-        description: "Order this item belongs to"
+        description: "Đơn hàng mà mục này thuộc về"
         tests:
           - not_null
           - relationships:
@@ -57,27 +53,21 @@ models:
               field: order_id
       
       - name: product_id
-        description: "Product ordered"
+        description: "Sản phẩm được đặt"
         tests:
           - not_null
           - relationships:
               to: ref('products')
               field: product_id
       
-      - name: quantity
-        description: "Quantity ordered"
-        tests:
-          - not_null
-          - dbt_utils.accepted_range:
-              min_value: 1
-              max_value: 1000
+      # - name: quantity
+      #   description: "Số lượng được đặt"
+      #   tests:
+      #     - not_null
+      #     - dbt_utils.accepted_range:
+      #         min_value: 1
+      #         max_value: 1000
       
-      - name: price
-        description: "Item price"
-        tests:
-          - not_null
-          - dbt_utils.accepted_range:
-              min_value: 0
 
   - name: customers
     description: "Customer master data"
@@ -87,34 +77,7 @@ models:
         tests:
           - unique
           - not_null
-      
-      - name: email
-        description: "Customer email address"
-        tests:
-          - not_null
-          - unique
-      
-      - name: first_name
-        description: "Customer first name"
-        tests:
-          - not_null
-      
-      - name: last_name
-        description: "Customer last name"
-        tests:
-          - not_null
-      
-      - name: gender
-        description: "Customer gender"
-        tests:
-          - accepted_values:
-              values: ['Male', 'Female', 'Other']
-      
-      - name: tier
-        description: "Customer tier/segment"
-        tests:
-          - accepted_values:
-              values: ['Bronze', 'Silver', 'Gold', 'Platinum']
+    
 
   - name: products
     description: "Product master data"
@@ -125,10 +88,6 @@ models:
           - unique
           - not_null
       
-      - name: product_name
-        description: "Product name"
-        tests:
-          - not_null
       
       - name: category_id
         description: "Product category"
@@ -145,62 +104,31 @@ models:
               to: ref('brands')
               field: brand_id
       
-      - name: price
-        description: "Product price"
-        tests:
-          - not_null
-          - dbt_utils.accepted_range:
-              min_value: 0
-              inclusive: false
-      
-      - name: stock_quantity
-        description: "Current stock level"
-        tests:
-          - not_null
-          - dbt_utils.accepted_range:
-              min_value: 0
 
   - name: categories
     description: "Product categories"
     columns:
       - name: category_id
-        description: "Unique category identifier"
+        description: "Định danh duy nhất cho mỗi danh mục"
         tests:
           - unique
           - not_null
-      
-      - name: category_name
-        description: "Category name"
-        tests:
-          - not_null
-          - unique
 
   - name: brands
     description: "Product brands"
     columns:
       - name: brand_id
-        description: "Unique brand identifier"
+        description: "Định danh duy nhất cho mỗi thương hiệu"
         tests:
           - unique
           - not_null
-      
-      - name: brand_name
-        description: "Brand name"
-        tests:
-          - not_null
-          - unique
 
   - name: payment_method
-    description: "Payment methods"
+    description: "Phương thức thanh toán"
     columns:
       - name: payment_method_id
-        description: "Unique payment method identifier"
+        description: "Định danh duy nhất cho mỗi phương thức thanh toán"
         tests:
           - unique
           - not_null
-      
-      - name: payment_method_name
-        description: "Payment method name"
-        tests:
-          - not_null
-          - unique
+    

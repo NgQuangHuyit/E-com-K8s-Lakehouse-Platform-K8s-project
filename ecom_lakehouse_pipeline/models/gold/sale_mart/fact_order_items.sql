@@ -3,8 +3,8 @@
     schema='sale_mart',
     file_format='delta',
     unique_key='order_item_id',
-    strategy='merge',
-    partition_by='date_key'
+    incremental_strategy='merge',
+    partition_by=['year', 'month', 'day']
 ) }}
 
 
@@ -15,6 +15,10 @@ WITH order_cleaned AS (
         order_date,
         payment_method_id
     FROM {{ ref('orders') }}
+    {% if is_incremental() %}
+    WHERE year = {{ var('etl_year') }}
+      AND month = {{ var('etl_month') }}
+    {% endif %}
 )
 , order_items_cleaned AS (
     SELECT
@@ -23,8 +27,15 @@ WITH order_cleaned AS (
         product_id,
         quantity,
         unit_price,
-        discount
+        discount,
+        year,
+        month,
+        day
     FROM {{ ref('orders_items') }}
+    {% if is_incremental() %}
+    WHERE year = {{ var('etl_year') }}
+      AND month = {{ var('etl_month') }}
+    {% endif %}
 ),
 fact_sales AS (
     SELECT
@@ -38,10 +49,13 @@ fact_sales AS (
         oi.discount AS discount_percent,
         (oi.unit_price * oi.quantity) AS sub_total,
         (oi.unit_price * oi.quantity * oi.discount) AS discount_amt,
-        (oi.unit_price * oi.quantity) - (oi.unit_price * oi.quantity * oi.discount) AS total_amount
-    FROM order_cleaned o
-    JOIN order_items_cleaned oi
-        ON o.order_id = oi.order_id
+        (oi.unit_price * oi.quantity) - (oi.unit_price * oi.quantity * oi.discount) AS total_amount,
+        oi.year AS year,
+        oi.month AS month,
+        oi.day AS day
+    FROM order_items_cleaned oi
+    JOIN order_cleaned o
+        ON oi.order_id = o.order_id
 )
 
 SELECT * FROM fact_sales

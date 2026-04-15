@@ -3,8 +3,8 @@
     schema='sale_mart',
     file_format='delta',
     unique_key='order_id',
-    strategy='merge',
-    partition_by=['date_key']
+    incremental_strategy='merge',
+    partition_by=['year', 'month', 'day']
 ) }}
 
 WITH fact_orders AS (
@@ -13,8 +13,16 @@ WITH fact_orders AS (
         customer_id as customer_key,
         CAST(date_format(order_date, 'yyyyMMdd') AS INT) AS date_key,
         payment_method_id as payment_method_key,
-        total_amount
+        total_amount,
+        year,
+        month,
+        day
     FROM {{ ref('orders') }}
+
+    {% if is_incremental() %}
+    WHERE year = {{ var('etl_year') }}
+      AND month = {{ var('etl_month') }}
+    {% endif %}
 )
 SELECT * from fact_orders
 

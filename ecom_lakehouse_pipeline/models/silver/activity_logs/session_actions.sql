@@ -1,6 +1,7 @@
 {{
     config(
-        materialized='table',
+        materialized='incremental',
+        incremental_strategy='merge',
         unique_key='action_id',
         file_format='delta',
         schema='silver',
@@ -18,6 +19,9 @@ with exploded_actions as (
         ingest_date
         
     from {{ source('bronze', 'user_activity_logs') }}
+    {% if is_incremental() %}
+    where ingest_date = '{{ var('etl_date') }}'
+    {% endif %}
 )
 
 
@@ -47,10 +51,7 @@ select
     year(ea.ingest_date) as year,
     month(ea.ingest_date) as month,
     day(ea.ingest_date) as day
-    
 from exploded_actions ea
 
--- {% if is_incremental() %}
--- where ingest_date >= (select max(ingest_date) from {{ this }})
--- {% endif %}
+
 

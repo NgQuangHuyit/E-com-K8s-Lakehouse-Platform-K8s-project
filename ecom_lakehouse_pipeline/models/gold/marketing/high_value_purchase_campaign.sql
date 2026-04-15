@@ -8,7 +8,6 @@
     - Phân khúc đơn giản: Hot (>80%), Warm (60-80%), Cold (<60%)
     - Join với customer data từ silver layer
     
-    Use Case: Email marketing, push notifications
 */
 
 {{ config(
@@ -20,20 +19,40 @@
     partition_by=['year', 'month', 'day']
 ) }}
 
+WITH temp_top_customers AS (
+    SELECT 
+        user_id as customer_id,
+        prediction_date as campaign_date,
+        purchase_probability,
+        prediction_timestamp as predicted_at
+    FROM {{ source('ml', 'next_day_purchase_prediction') }}
+    WHERE will_purchase_tomorrow = 1
+        AND prediction_date = '{{ var("etl_date") }}'
+        AND purchase_probability >= 0.50
+), 
+customer_info AS (
+    SELECT
+        customer_id,
+        first_name,
+        last_name,
+        email,
+        phone_number
+    FROM {{ ref('customers') }}
+)
 
 SELECT 
     c.customer_id,
     c.campaign_date,
     c.purchase_probability,
     
-    -- Phân khúc đơn giản
+
     CASE 
         WHEN c.purchase_probability >= 0.80 THEN 'Hot Lead'
         WHEN c.purchase_probability >= 0.60 THEN 'Warm Lead'
         ELSE 'Cold Lead'
     END as customer_segment,
     
-    -- Recommendation đơn giản
+
     CASE 
         WHEN c.purchase_probability >= 0.80 THEN 'Send Premium Offer'
         WHEN c.purchase_probability >= 0.60 THEN 'Send Discount Code'
@@ -53,7 +72,7 @@ SELECT
     c.predicted_at,
     CURRENT_TIMESTAMP as created_at
 
-FROM {{ ref('temp_top_customers') }} c
-LEFT JOIN {{ ref('customers') }} i ON c.customer_id = i.customer_id
+FROM temp_top_customers c
+LEFT JOIN customer_info i ON c.customer_id = i.customer_id
 WHERE i.email IS NOT NULL
 ORDER BY c.purchase_probability DESC
