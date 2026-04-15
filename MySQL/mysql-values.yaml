@@ -8,7 +8,7 @@ primary:
   persistence:
     enabled: true
     size: 2Gi
-    storageClass: do-block-storage  # hoặc storage class bạn đang dùng
+    storageClass: do-block-storage  
 
 service:
   type: ClusterIP

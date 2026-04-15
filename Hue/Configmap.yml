@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hue-config
+  namespace: lakehouse
+data:
+  hue.ini: |
+    [desktop]
+    secret_key = mysecret
+    time_zone = Asia/Ho_Chi_Minh
+    http_host = 0.0.0.0
+    http_port = 8888
+    server_user = hue
+    server_group = hue
+    default_user = hue
+    default_hue_user = hue
+
+    [[database]]
+    engine = mysql
+    host = mysql-2.lakehouse.svc.cluster.local
+    port = 3306
+    user = hue
+    password = huepass
+    name = hue
+
+    [notebook]
+    enable_sql_indexer = false
+    enable_query_builder = true
+    enable_query_history = true
+
+    [[interpreters]]
+    [[[trino]]]
+    name = Trino
+    interface = sqlalchemy
+    options='{"url": "trino://user@trino-coordinator.lakehouse.svc.cluster.local:8080"}'

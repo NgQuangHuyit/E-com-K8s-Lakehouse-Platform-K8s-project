@@ -2,7 +2,6 @@
     config(
         materialized='table',
         file_format='parquet',
-        location_root='s3a://lakehouse/tmp/sessions_daily_tmp',
         schema='default'
     )
 }}

@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zeppelin-env
+  namespace: lakehouse
+data:
+  ZEPPELIN_NOTEBOOK_STORAGE: org.apache.zeppelin.notebook.repo.S3NotebookRepo
+  ZEPPELIN_NOTEBOOK_S3_BUCKET: zeppelin-notebooks
+  ZEPPELIN_NOTEBOOK_S3_USER: minio
+  ZEPPELIN_NOTEBOOK_S3_ENDPOINT: http://minio-1760084160.lakehouse.svc.cluster.local:9000
+  ZEPPELIN_NOTEBOOK_S3_PATH_STYLE_ACCESS: "true"
+
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-credentials
+  namespace: lakehouse
+type: Opaque
+stringData:
+  AWS_ACCESS_KEY_ID: minio
+  AWS_SECRET_ACCESS_KEY: minioadmin123
+
+

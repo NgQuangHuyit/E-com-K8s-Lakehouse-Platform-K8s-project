@@ -1,0 +1,146 @@
+image:
+  repository: qnguyen3496/trino-ranger
+  tag: "452"
+  pullPolicy: IfNotPresent
+
+securityContext:
+  runAsUser: 0
+  runAsGroup: 0
+  
+server:
+  workers: 1
+  node:
+    environment: dev_trino
+  log:
+    trino:
+      level: INFO
+  config:
+    path: /tmp/trino
+    http:
+      port: 8080
+    authenticationType: "PASSWORD"
+    query:
+      maxMemory: "4GB"
+  autoscaling:
+    enabled: false
+
+additionalConfigProperties:
+  - internal-communication.shared-secret=super-secret-communication-shared-secret
+  - http-server.process-forwarded=true
+  - hide-inaccessible-columns=true
+  - discovery.uri=http://trino:8080
+
+additionalCatalogs:
+  hive: |
+    connector.name=hive
+    hive.metastore.uri=thrift://hive-metastore.lakehouse.svc.cluster.local:9083
+    hive.s3.aws-access-key=minio
+    hive.s3.aws-secret-key=minioadmin123
+    hive.s3.endpoint=http://minio-1760084160.lakehouse.svc.cluster.local:9000
+    hive.s3.path-style-access=true
+    hive.s3.ssl.enabled=false
+  delta: |
+    connector.name=delta-lake
+    hive.metastore.uri=thrift://hive-metastore.lakehouse.svc.cluster.local:9083
+    hive.s3.aws-access-key=minio
+    hive.s3.aws-secret-key=minioadmin123
+    hive.s3.endpoint=http://minio-1760084160.lakehouse.svc.cluster.local:9000
+    hive.s3.path-style-access=true
+    hive.s3.ssl.enabled=false
+
+envFrom: []
+
+service:
+  type: ClusterIP
+  port: 8080
+
+auth:
+  passwordAuth: "admin:$2y$10$el/kJNE3Oe84ku0hYtzZgegyhJf8L9jL3V6NI3B7VrZsk4VWEzu8K"
+
+coordinator:
+  jvm:
+    maxHeapSize: "8G"
+    gcMethod:
+      type: "UseG1GC"
+      g1:
+        heapRegionSize: "32M"
+  config:
+    memory:
+      heapHeadroomPerNode: ""
+    query:
+      maxMemoryPerNode: "1GB"
+  additionalJVMConfig:
+    - -XX:+UnlockDiagnosticVMOptions
+    - -XX:G1NumCollectionsKeepPinned=10000000
+  resources:
+    requests:
+      cpu: 500m
+      memory: 500Mi
+  livenessProbe:
+    initialDelaySeconds: 20
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+  readinessProbe:
+    initialDelaySeconds: 20
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+  additionalConfigFiles:
+    is_coordinator.txt: |
+      true
+  secretMounts:
+    - name: trino-ranger-plugin-config-secret
+      secretName: trino-ranger-plugin-config-secret
+      path: /tmp/ranger_plugin_config/
+
+worker:
+  jvm:
+    maxHeapSize: "8G"
+    gcMethod:
+      type: "UseG1GC"
+      g1:
+        heapRegionSize: "32M"
+  config:
+    memory:
+      heapHeadroomPerNode: ""
+    query:
+      maxMemoryPerNode: "1GB"
+  additionalJVMConfig:
+    - -XX:+UnlockDiagnosticVMOptions
+    - -XX:G1NumCollectionsKeepPinned=10000000
+  resources:
+    requests:
+      cpu: 500m
+      memory: 500Mi
+  livenessProbe:
+    initialDelaySeconds: 20
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+  readinessProbe:
+    initialDelaySeconds: 20
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+  lifecycle:
+    preStop:
+      exec:
+        command: ["/bin/sh", "-c", "curl -v -X PUT -d '\"SHUTTING_DOWN\"' -H \"Content-type: application/json\" http://localhost:8081/v1/info/state"]
+  terminationGracePeriodSeconds: 30
+  additionalConfigFiles:
+    is_coordinator.txt: |
+      false
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: trino2.lakehouse.local # Change this to your domain name for the Trino service
+      paths:
+        - path: /
+          pathType: Prefix

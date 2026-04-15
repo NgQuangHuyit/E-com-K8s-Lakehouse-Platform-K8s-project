@@ -7,7 +7,6 @@
 {{ config(
     materialized='table',
     file_format='parquet',
-    location_root='s3a://lakehouse/tmp/top_customers',
     tags=['temp', 'marketing'],
     schema='default',
     pre_hook="DROP TABLE IF EXISTS {{ this }}"
@@ -19,5 +18,4 @@ SELECT
     purchase_probability,
     predicted_at
 FROM {{ ref('temp_latest_predictions') }}
-WHERE rn = 1
-    AND purchase_probability >= 0.50
+WHERE purchase_probability >= 0.50

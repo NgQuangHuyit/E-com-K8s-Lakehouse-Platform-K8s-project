@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zeppelin
+  namespace: lakehouse
+spec: 
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zeppelin
+  template:
+    metadata:
+      labels:
+        app: zeppelin
+    spec:
+      containers:
+      - name: zeppelin
+        image: apache/zeppelin:0.11.1
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: zeppelin-env
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: minio-credentials
+              key: AWS_ACCESS_KEY_ID
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-credentials
+              key: AWS_SECRET_ACCESS_KEY
+
+--- 
+apiVersion: v1
+kind: Service
+metadata:
+  name: zeppelin-svc
+  namespace: lakehouse
+spec:
+  type: ClusterIP
+  selector:
+    app: zeppelin
+  ports:
+  - port: 8080
+    targetPort: 8080
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: zeppelin-ingress
+  namespace: lakehouse
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: zeppelin.lakehouse.local 
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: zeppelin-svc
+                port:
+                  number: 8080
